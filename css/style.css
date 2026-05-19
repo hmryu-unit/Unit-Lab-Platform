@@ -4386,3 +4386,65 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .slot-pool-attr-chip strong {
   font-weight: 700;
 }
+
+/* ===== 브랜드 관리 섹션 (플랫폼 관리 페이지) ===== */
+.brand-manage-card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 4px;
+}
+.brand-manage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.brand-manage-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-700);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.brand-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brand-manage-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--gray-50);
+  border-radius: 7px;
+  font-size: 13px;
+  transition: background .12s;
+}
+.brand-manage-item:hover { background: var(--gray-100); }
+.brand-manage-drag {
+  color: var(--gray-300);
+  cursor: grab;
+  padding: 2px 3px;
+  font-size: 12px;
+}
+.brand-manage-drag:hover { color: var(--gray-500); }
+.brand-manage-name {
+  font-weight: 600;
+  color: var(--gray-800);
+}
+.brand-manage-count {
+  font-size: 11px;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  border-radius: 99px;
+  padding: 1px 7px;
+}
+.brand-manage-empty {
+  font-size: 12px;
+  color: var(--gray-400);
+  padding: 6px 4px;
+}

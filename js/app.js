@@ -833,8 +833,181 @@ let lineupFilterBrand = '';
 
 async function renderLineups() {
   await loadAll();
+  renderBrandManageSection();
   renderLineupBrandCards();
   renderLineupTable();
+}
+
+// ── 브랜드 관리 섹션 렌더 (플랫폼 관리 페이지 상단) ──
+function renderBrandManageSection() {
+  const container = document.getElementById('brand-manage-section');
+  if (!container) return;
+
+  const brands = (State.enums || [])
+    .filter(e => e.group_key === 'lineup_brand')
+    .sort((a, b) => (a.sort_order || 99) - (b.sort_order || 99));
+
+  const itemsHtml = brands.length === 0
+    ? `<div class="brand-manage-empty">등록된 브랜드가 없습니다. <strong>+ 브랜드 추가</strong> 버튼으로 추가하세요.</div>`
+    : brands.map(e => {
+        const color = e.color && e.color !== '#6b7280' ? e.color : null;
+        const dot = color
+          ? `<span style="width:10px;height:10px;border-radius:50%;background:${escHtml(color)};display:inline-block;flex-shrink:0"></span>`
+          : `<span style="width:10px;height:10px;border-radius:50%;background:#e5e7eb;display:inline-block;flex-shrink:0"></span>`;
+        const lineupCount = State.lineups.filter(l => l.brand === e.value).length;
+        return `
+          <div class="brand-manage-item" data-id="${escHtml(e.id)}">
+            <span class="brand-manage-drag" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>
+            ${dot}
+            <span class="brand-manage-name">${escHtml(e.label || e.value)}</span>
+            <span class="brand-manage-count">${lineupCount}개</span>
+            <span style="flex:1"></span>
+            <button class="enum-action-btn" onclick="openBrandEditModal('${escHtml(e.id)}')" title="수정"><i class="fas fa-pen"></i></button>
+            <button class="enum-action-btn enum-action-btn--del" onclick="deleteBrand('${escHtml(e.id)}','${escHtml(e.label||e.value)}')" title="삭제"><i class="fas fa-trash"></i></button>
+          </div>`;
+      }).join('');
+
+  container.innerHTML = `
+    <div class="brand-manage-card">
+      <div class="brand-manage-header">
+        <div class="brand-manage-title">
+          <i class="fas fa-building"></i> 브랜드 관리
+          <span class="badge badge-gray" style="margin-left:6px;font-size:10px">${brands.length}</span>
+        </div>
+        <button class="btn btn-xs btn-primary" onclick="openBrandAddModal()">
+          <i class="fas fa-plus"></i> 브랜드 추가
+        </button>
+      </div>
+      <div class="brand-manage-list" id="brand-manage-list">${itemsHtml}</div>
+    </div>`;
+
+  // DnD 정렬
+  if (brands.length >= 2) {
+    const list = container.querySelector('#brand-manage-list');
+    makeSortable(list, {
+      itemSelector: '.brand-manage-item[data-id]',
+      handleSelector: '.brand-manage-drag',
+      getId: el => el.dataset.id,
+      onReorder: async (orderedIds) => {
+        await Promise.all(orderedIds.map((id, i) => {
+          const e = State.enums.find(x => x.id === id);
+          if (!e) return Promise.resolve();
+          return API.put('enums', id, { ...e, sort_order: i + 1 });
+        }));
+        await loadAll();
+        renderBrandManageSection();
+        renderLineupBrandCards();
+        _populateDynamicSelects();
+      }
+    });
+  }
+}
+
+// ── 브랜드 추가/수정 모달 ──
+function openBrandAddModal() {
+  _openBrandModal({}, false);
+}
+function openBrandEditModal(enumId) {
+  const e = State.enums.find(x => x.id === enumId);
+  if (!e) return;
+  _openBrandModal(e, true);
+}
+
+function _openBrandModal(data, isEdit) {
+  let modal = document.getElementById('brand-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'brand-modal';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:380px">
+        <div class="modal-header">
+          <span class="modal-title" id="brand-modal-title">브랜드 추가</span>
+          <button class="modal-close" onclick="closeModal('brand-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="brand-record-id">
+          <div class="form-group">
+            <label class="form-label">브랜드명 <span class="required">*</span></label>
+            <input type="text" class="form-control" id="brand-label" placeholder="예: 유닛빌드, 유닛하우스">
+          </div>
+          <div class="form-group">
+            <label class="form-label">색상</label>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="color" id="brand-color" value="#1a56db"
+                     style="width:40px;height:34px;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;padding:2px">
+              <span style="font-size:12px;color:#9ca3af">브랜드 카드·배지 색상</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('brand-modal')">취소</button>
+          <button class="btn btn-primary" onclick="saveBrand()">저장</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  document.getElementById('brand-modal-title').textContent = isEdit ? '브랜드 수정' : '브랜드 추가';
+  document.getElementById('brand-record-id').value = isEdit ? (data.id || '') : '';
+  document.getElementById('brand-label').value     = isEdit ? (data.label || data.value || '') : '';
+  document.getElementById('brand-color').value     = (data.color && data.color.startsWith('#')) ? data.color : '#1a56db';
+  openModal('brand-modal');
+}
+
+async function saveBrand() {
+  const id       = document.getElementById('brand-record-id').value.trim();
+  const labelVal = document.getElementById('brand-label').value.trim();
+  const color    = document.getElementById('brand-color').value || '#1a56db';
+
+  if (!labelVal) { showToast('브랜드명을 입력하세요', 'error'); return; }
+
+  const existing = id ? State.enums.find(e => e.id === id) : null;
+  const sort_order = existing?.sort_order ??
+    (Math.max(0, ...State.enums.filter(e => e.group_key === 'lineup_brand').map(e => e.sort_order || 0)) + 1);
+
+  const payload = {
+    group_key: 'lineup_brand', group_label: '플랫폼 브랜드',
+    label: labelVal, value: labelVal,
+    color, sort_order, is_system: false
+  };
+
+  try {
+    if (id) {
+      await API.put('enums', id, { ...payload, id });
+      showToast('브랜드가 수정되었습니다');
+    } else {
+      await API.post('enums', payload);
+      showToast('브랜드가 추가되었습니다');
+    }
+    closeModal('brand-modal');
+    await loadAll();
+    renderBrandManageSection();
+    renderLineupBrandCards();
+    _populateDynamicSelects();
+  } catch(err) {
+    showToast('저장 실패: ' + err.message, 'error');
+  }
+}
+
+async function deleteBrand(enumId, label) {
+  const inUse = State.lineups.filter(l => l.brand === label).length;
+  const warnMsg = inUse > 0 ? `\n⚠️ 이 브랜드를 사용 중인 플랫폼이 ${inUse}개 있습니다.` : '';
+  confirmDelete(
+    `브랜드 "${label}"을 삭제하시겠습니까?${warnMsg}`,
+    async () => {
+      try {
+        await API.delete('enums', enumId);
+        showToast('브랜드가 삭제되었습니다');
+        await loadAll();
+        renderBrandManageSection();
+        renderLineupBrandCards();
+        _populateDynamicSelects();
+      } catch(err) {
+        showToast('삭제 실패: ' + err.message, 'error');
+      }
+    }
+  );
 }
 
 function renderLineupBrandCards() {
@@ -852,7 +1025,7 @@ function renderLineupBrandCards() {
     : [...new Set(State.lineups.map(l => l.brand).filter(Boolean))];
 
   if (brands.length === 0) {
-    container.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">선택지 관리에서 lineup_brand 그룹에 브랜드를 등록하면 카드가 표시됩니다.</div>';
+    container.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">브랜드가 없습니다. 위 <strong>브랜드 관리</strong>에서 브랜드를 추가하면 카드가 표시됩니다.</div>';
     return;
   }
 
@@ -4126,7 +4299,6 @@ function _populateDynamicSelects() {
 
 const ENUM_GROUP_META = {
   material_type:   { label: '자재·스펙 유형',   icon: 'fa-layer-group',  editable: true,  desc: '스펙 유형 + 자재 카테고리 공용 — 같은 유형끼리만 연결 가능' },
-  lineup_brand:    { label: '플랫폼 브랜드',    icon: 'fa-building',     editable: true,  desc: '플랫폼 등록/수정 모달의 "브랜드" 선택지' },
   lineup_status:   { label: '플랫폼 상태',      icon: 'fa-toggle-on',    editable: false, desc: '시스템 고정값 — 변경 불가' },
   set_status:      { label: '패키지 상태',      icon: 'fa-tag',          editable: false, desc: '시스템 고정값 — 변경 불가' },
   material_status: { label: '자재 상태',        icon: 'fa-database',     editable: false, desc: '시스템 고정값 — 변경 불가' },
