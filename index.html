@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>유닛랩 플랫폼 - 플랫폼 종합 시스템</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== 사이드바 ===== -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">U</div>
+      <div>
+        <div class="logo-text">UnitLab</div>
+        <div class="logo-sub">플랫폼 종합 시스템</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">메인</div>
+      <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon"><i class="fas fa-chart-pie"></i></span>
+        대시보드
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">구조 관리</div>
+      <a class="nav-item" data-page="lineups" onclick="navigate('lineups')">
+        <span class="nav-icon"><i class="fas fa-layer-group"></i></span>
+        플랫폼 관리
+        <span class="nav-badge" id="nav-badge-lineups"></span>
+      </a>
+      <a class="nav-item" data-page="packages" onclick="navigate('packages')">
+        <span class="nav-icon"><i class="fas fa-tags"></i></span>
+        패키지 관리
+      </a>
+      <!-- 패키지 카탈로그: 카테고리 페이지에 통합됨, nav 항목 숨김 -->
+      <a class="nav-item" data-page="slots" onclick="navigate('slots')">
+        <span class="nav-icon"><i class="fas fa-puzzle-piece"></i></span>
+        스펙 관리
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">자재 관리</div>
+      <a class="nav-item" data-page="materials" onclick="navigate('materials')">
+        <span class="nav-icon"><i class="fas fa-box"></i></span>
+        자재 DB
+      </a>
+      <a class="nav-item" data-page="slot-materials" onclick="navigate('slot-materials')">
+        <span class="nav-icon"><i class="fas fa-link"></i></span>
+        스펙-자재 연결
+      </a>
+      <a class="nav-item" data-page="variants" onclick="navigate('variants')">
+        <span class="nav-icon"><i class="fas fa-code-branch"></i></span>
+        변형(Variant)
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">운영</div>
+      <a class="nav-item" data-page="enums" onclick="navigate('enums')">
+        <span class="nav-icon"><i class="fas fa-list-ul"></i></span>
+        선택지 관리
+      </a>
+      <a class="nav-item" data-page="changelogs" onclick="navigate('changelogs')">
+        <span class="nav-icon"><i class="fas fa-history"></i></span>
+        변경 이력
+      </a>
+    </div>
+  </nav>
+
+  <!-- ===== 메인 영역 ===== -->
+  <div id="main">
+
+    <!-- 헤더 -->
+    <header id="header">
+      <div class="header-breadcrumb">
+        <span><i class="fas fa-home"></i></span>
+        <span>/</span>
+        <span class="current" id="header-title">대시보드</span>
+      </div>
+      <div class="header-right">
+        <button class="undo-btn" id="undo-btn" onclick="undoLastChange()" title="마지막 변경 취소 (Ctrl+Z)" disabled>
+          <i class="fas fa-undo"></i>
+          <span id="undo-btn-label">되돌리기</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 콘텐츠 -->
+    <main id="content">
+
+      <!-- ===== 대시보드 페이지 ===== -->
+      <section class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📊 대시보드</div>
+            <div class="page-desc">유닛랩 플랫폼 자재 관리 현황 요약</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="refreshDashboard()">
+              <i class="fas fa-sync-alt"></i> 새로고침
+            </button>
+          </div>
+        </div>
+
+        <div class="ssot-notice">
+          <span class="notice-icon">💡</span>
+          <div>
+            <strong>SSoT (단일 진실 공급원)</strong> — 자재 1개 교체 시 스펙만 수정하면 연결된 모든 패키지·플랫폼에 자동 반영됩니다.
+            영업 / 설계 / 시공 / 구매팀이 동일한 데이터를 기반으로 업무합니다.
+          </div>
+        </div>
+
+        <div class="stat-grid" id="dashboard-stats"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-layer-group" style="color:#1a56db"></i> 플랫폼 현황</span>
+              <button class="btn btn-sm btn-secondary" onclick="navigate('lineups')">전체보기</button>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div id="dashboard-lineups-table"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-exclamation-circle" style="color:#e02424"></i> 단종 자재 알림</span>
+              <button class="btn btn-sm btn-secondary" onclick="navigate('materials')">자재 관리</button>
+            </div>
+            <div class="card-body" id="dashboard-discontinued"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-history" style="color:#6b7280"></i> 최근 변경 이력</span>
+              <button class="btn btn-sm btn-secondary" onclick="navigate('changelogs')">전체보기</button>
+            </div>
+            <div class="card-body" style="padding:0" id="dashboard-logs"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 플랫폼 관리 페이지 ===== -->
+      <section class="page" id="page-lineups">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🏗️ 플랫폼 관리</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openLineupModal()">
+              <i class="fas fa-plus"></i> 플랫폼 추가
+            </button>
+          </div>
+        </div>
+
+        <div id="brand-cards-container" class="brand-cards-grid" style="margin-bottom:20px"></div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">전체 플랫폼 목록</span>
+            <div class="filter-bar" style="margin:0">
+              <div class="search-box" style="min-width:160px">
+                <span class="search-icon"><i class="fas fa-search"></i></span>
+                <input type="text" placeholder="플랫폼 검색..." oninput="filterLineups(this.value)" id="lineup-search">
+              </div>
+              <select class="filter-select" id="lineup-brand-filter" onchange="filterLineupsByBrand(this.value)">
+                <option value="">전체 브랜드</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:32px"></th>
+                  <th>브랜드</th>
+                  <th>플랫폼명</th>
+                  <th>설명</th>
+                  <th>상태</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody id="lineups-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 플랫폼 상세 페이지 ===== -->
+      <section class="page" id="page-lineup-detail">
+        <div class="page-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-secondary btn-sm" onclick="navigate('lineups')">
+              <i class="fas fa-arrow-left"></i> 목록
+            </button>
+            <div>
+              <div class="page-title" id="detail-lineup-title">플랫폼 상세</div>
+              <div class="page-desc" id="detail-lineup-desc"></div>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="editCurrentLineup()">
+              <i class="fas fa-edit"></i> 플랫폼 수정
+            </button>
+          </div>
+        </div>
+        <!-- 플랫폼 정보 + 카테고리별 선택 영역 (JS로 렌더링) -->
+        <div id="detail-lineup-info"></div>
+        <div id="detail-settype-grid"></div>
+      </section>
+
+      <!-- ===== 패키지 관리 페이지 (분류 → 패키지 → 등급 3단 계층) ===== -->
+      <section class="page" id="page-packages">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🏷️ 패키지 관리</div>
+
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="openCategoryModal()">
+              <i class="fas fa-folder-plus"></i> 분류 추가
+            </button>
+            <button class="btn btn-primary" onclick="openPackageModal()">
+              <i class="fas fa-plus"></i> 패키지 추가
+            </button>
+          </div>
+        </div>
+
+        <!-- 검색 바 -->
+        <div class="filter-bar" style="margin-bottom:16px">
+          <div class="search-box">
+            <span class="search-icon"><i class="fas fa-search"></i></span>
+            <input type="text" placeholder="패키지, 등급명 검색..." oninput="filterPackageGroups(this.value)" id="stg-search">
+          </div>
+        </div>
+
+        <!-- 분류별 그룹 컨테이너 (JS 렌더) -->
+        <div id="stg-container"></div>
+      </section>
+
+      <!-- ===== 패키지 상세 페이지 ===== -->
+      <section class="page" id="page-package-detail">
+        <div class="page-header">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-secondary" onclick="navigate('packages')">
+              <i class="fas fa-arrow-left"></i> 목록
+            </button>
+            <div>
+              <div class="page-title" id="std-page-title">패키지 상세</div>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="openGradeModalInDetail()">
+              <i class="fas fa-plus"></i> 등급 추가
+            </button>
+            <button class="btn btn-secondary" onclick="openItemModal()">
+              <i class="fas fa-plus"></i> 항목 추가
+            </button>
+            <button class="btn btn-secondary" onclick="editCurrentPackage()">
+              <i class="fas fa-edit"></i> 패키지 수정
+            </button>
+          </div>
+        </div>
+
+        <!-- 패키지/항목/스펙 요약 바 -->
+        <div class="std-summary-bar" id="std-summary-bar"></div>
+
+        <!-- 메인 바디: 매트릭스(왼쪽) + 스펙풀(오른쪽) -->
+        <div class="std-body-layout">
+
+          <!-- 왼쪽: 3×N 배분 표 -->
+          <div class="std-matrix-area">
+            <div class="std-matrix-wrap">
+              <div id="std-matrix-container"><!-- JS 렌더 --></div>
+            </div>
+          </div>
+
+          <!-- 오른쪽: 스펙 풀 패널 -->
+          <aside class="std-slot-pool-panel" id="std-slot-pool-panel">
+            <div class="std-panel-header">
+              <div class="std-panel-title">
+                <i class="fas fa-puzzle-piece"></i> 스펙 풀
+                <span id="std-slot-pool-count" class="badge badge-gray" style="margin-left:5px;font-size:10px"></span>
+              </div>
+              <button class="btn btn-xs btn-primary" onclick="openSlotModalInDetail()">
+                <i class="fas fa-plus"></i> 추가
+              </button>
+            </div>
+            <div class="slot-pool-search">
+              <div class="search-box">
+                <span class="search-icon"><i class="fas fa-search"></i></span>
+                <input type="text" placeholder="스펙 검색..." oninput="filterSlotPool(this.value)" id="std-slot-search">
+              </div>
+            </div>
+            <div id="std-slot-pool" class="slot-pool-list"><!-- JS 렌더 --></div>
+            <div class="slot-pool-dnd-hint">
+              <i class="fas fa-hand-paper"></i> 스펙을 셀로 드래그하여 배치
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== 등급 카탈로그 페이지 ===== -->
+      <section class="page" id="page-grades">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📦 등급 카탈로그</div>
+            <div class="page-desc">패키지별로 그룹화된 등급 목록</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openGradeModal()">
+              <i class="fas fa-plus"></i> 등급 추가
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon"><i class="fas fa-search"></i></span>
+            <input type="text" placeholder="등급명, 코드 검색..." oninput="filterGrades(this.value)" id="set-search">
+          </div>
+        </div>
+
+        <!-- 패키지별 그룹 목록 (JS 렌더) -->
+        <div id="grades-group-container"></div>
+      </section>
+
+      <!-- ===== 스펙 관리 페이지 ===== -->
+      <section class="page" id="page-slots">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🔩 스펙 관리</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openSlotModal()">
+              <i class="fas fa-plus"></i> 스펙 추가
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon"><i class="fas fa-search"></i></span>
+            <input type="text" placeholder="스펙명, 코드 검색..." oninput="filterSlots(this.value)">
+          </div>
+          <select class="filter-select" onchange="filterSlotsBySet(this.value)" id="slot-set-filter">
+            <option value="">전체 패키지</option>
+          </select>
+          <select class="filter-select" id="slot-type-filter" onchange="filterSlotsByType(this.value)"></select>
+        </div>
+
+        <div id="slots-groups-container"></div>
+      </section>
+
+      <!-- ===== 자재 DB 페이지 ===== -->
+      <section class="page" id="page-materials">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🗃️ 자재 DB</div>
+            <div class="page-desc">전체 자재 목록 — 등록·수정·단종 처리 및 교체 관리</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openMaterialModal()">
+              <i class="fas fa-plus"></i> 자재 등록
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon"><i class="fas fa-search"></i></span>
+            <input type="text" placeholder="자재명, 코드, 브랜드, 공급업체 검색..." oninput="filterMaterials(this.value)" id="material-search">
+          </div>
+          <select class="filter-select" onchange="filterMaterialsByCategory(this.value)">
+            <option value="">전체 유형</option>
+            <option value="구조재">구조재</option>
+            <option value="마감재">마감재</option>
+            <option value="단열재">단열재</option>
+            <option value="방수재">방수재</option>
+            <option value="설비">설비</option>
+            <option value="기타">기타</option>
+          </select>
+          <select class="filter-select" onchange="filterMaterialsByStatus(this.value)">
+            <option value="">전체 상태</option>
+            <option value="active">사용중</option>
+            <option value="discontinued">단종</option>
+            <option value="pending">검토중</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>유형</th>
+                <th style="width:52px">이미지</th>
+                <th>자재코드</th>
+                <th>자재명</th>
+                <th>브랜드</th>
+                <th>규격</th>
+                <th>단위</th>
+                <th>단가</th>
+                <th>공급업체</th>
+                <th>상태</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="materials-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== 스펙-자재 연결 페이지 ===== -->
+      <section class="page" id="page-slot-materials">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🔗 스펙-자재 연결</div>
+          </div>
+        </div>
+        <div id="slot-materials-container"></div>
+      </section>
+
+      <!-- ===== 변형 관리 페이지 ===== -->
+      <section class="page" id="page-variants">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🌿 변형(Variant) 관리</div>
+            <div class="page-desc">단열지역·규모에 따른 스펙 변형을 데이터로 표현</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openVariantModal()">
+              <i class="fas fa-plus"></i> 변형 추가
+            </button>
+          </div>
+        </div>
+
+        <div class="ssot-notice">
+          <span class="notice-icon">🌿</span>
+          <div>
+            <strong>변형(Variant) 처리</strong> — 같은 플랫폼이라도 단열지역, 규모, 시공 조건에 따라 다른 자재가 사용됩니다.
+            변형 조건을 데이터로 정의하면 스펙-자재 연결 시 자동으로 적용됩니다.
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>플랫폼</th>
+                <th>변형 키</th>
+                <th>변형 이름</th>
+                <th>변형 값</th>
+                <th>설명</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="variants-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== 선택지 관리 페이지 ===== -->
+      <section class="page" id="page-enums">
+        <div class="page-header">
+          <div>
+            <div class="page-title">⚙️ 선택지 관리</div>
+          </div>
+        </div>
+        <div id="enums-container"></div>
+      </section>
+
+      <!-- ===== 변경 이력 페이지 ===== -->
+      <section class="page" id="page-changelogs">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📋 변경 이력</div>
+            <div class="page-desc">모든 자재 교체 및 데이터 변경 이력을 추적합니다</div>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon"><i class="fas fa-search"></i></span>
+            <input type="text" placeholder="대상명, 변경자 검색..." oninput="filterLogs(this.value)">
+          </div>
+          <select class="filter-select" onchange="filterLogsByType(this.value)">
+            <option value="">전체 유형</option>
+            <option value="create">생성</option>
+            <option value="update">수정</option>
+            <option value="delete">삭제</option>
+            <option value="replace">교체</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>일시</th>
+                <th>대상 유형</th>
+                <th>대상명</th>
+                <th>변경 유형</th>
+                <th>변경 전</th>
+                <th>변경 후</th>
+                <th>변경자</th>
+                <th>사유</th>
+              </tr>
+            </thead>
+            <tbody id="changelogs-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===== 모달들 ===== -->
+
+<!-- 플랫폼 모달 -->
+<div class="modal-overlay" id="lineup-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="lineup-modal-title">플랫폼 추가</span>
+      <button class="modal-close" onclick="closeModal('lineup-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="lineup-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">플랫폼 ID <span class="required">*</span></label>
+          <input type="text" class="form-control" id="lineup-code" placeholder="예: UB-S">
+        </div>
+        <div class="form-group">
+          <label class="form-label">플랫폼명 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="lineup-name" placeholder="예: 유닛빌드 S">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">브랜드 <span class="required">*</span></label>
+        <select class="form-control" id="lineup-brand"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-control" id="lineup-desc" placeholder="플랫폼 설명을 입력하세요"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">상태</label>
+        <select class="form-control" id="lineup-status"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('lineup-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveLineup()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 등급 모달 -->
+<div class="modal-overlay" id="grade-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title" id="grade-modal-title">등급 추가</span>
+      <button class="modal-close" onclick="closeModal('grade-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="grade-record-id">
+      <!-- 패키지 상세에서 열 때 자동 고정됨 -->
+      <div class="form-group" id="grade-package-row">
+        <label class="form-label">패키지 <span class="required">*</span></label>
+        <select class="form-control" id="grade-package-id"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">등급 코드</label>
+          <input type="text" class="form-control" id="grade-code" placeholder="예: GRD-023 (비워두면 자동)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">등급명 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="grade-name" placeholder="예: 저렴형, 프리미엄">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-control" id="grade-desc" rows="2" placeholder="등급 설명"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">상태</label>
+        <select class="form-control" id="grade-status"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('grade-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveGrade()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 스펙 모달 -->
+<div class="modal-overlay" id="slot-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" id="slot-modal-title">스펙 추가</span>
+      <button class="modal-close" onclick="closeModal('slot-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="slot-record-id">
+      <input type="hidden" id="slot-package-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">코드</label>
+          <input type="text" class="form-control" id="slot-code" placeholder="비워두면 자동">
+        </div>
+        <div class="form-group">
+          <label class="form-label">스펙명 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="slot-name" placeholder="예: 긴다리세면대">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">유형</label>
+        <select class="form-control" id="slot-type"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-control" id="slot-desc" rows="2" placeholder="스펙 설명"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('slot-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSlot()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 항목(Item) 모달 -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="item-modal-title">항목 추가</span>
+      <button class="modal-close" onclick="closeModal('item-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="item-record-id">
+      <div class="form-group">
+        <label class="form-label">항목명 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="item-name" placeholder="예: 세면대, 양변기, 상부장">
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-control" id="item-desc" rows="2" placeholder="항목 설명"></textarea>
+      </div>
+      <!-- 정렬 순서: DnD로 관리하므로 hidden 처리 -->
+      <input type="hidden" id="item-sort" value="99">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('item-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 셀 배치 모달 (항목 × 패키지 교차점에 스펙 배치) -->
+<div class="modal-overlay" id="cell-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title" id="cell-modal-title">스펙 배치</span>
+        <div class="cell-modal-subtitle" id="cell-modal-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeCellModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cell-item-id">
+      <input type="hidden" id="cell-grade-id">
+
+      <!-- 현재 배치 (저장된 상태) -->
+      <div class="cell-section">
+        <div class="cell-section-label">
+          <i class="fas fa-check-circle" style="color:#0e9f6e"></i> 현재 배치된 스펙
+        </div>
+        <div id="cell-current-slots" class="cell-slots-area"></div>
+      </div>
+
+      <!-- 추가할 스펙 선택 (미저장 스테이징) -->
+      <div class="cell-section">
+        <div class="cell-section-label">
+          <i class="fas fa-plus-circle" style="color:#1a56db"></i> 추가할 스펙 선택
+        </div>
+        <div class="cell-add-row">
+          <select class="form-control" id="cell-slot-select" style="flex:1">
+            <option value="">-- 스펙 선택 --</option>
+          </select>
+          <button class="btn btn-secondary" onclick="stageCellSlot()">
+            <i class="fas fa-plus"></i> 추가
+          </button>
+        </div>
+        <!-- 스테이징된 (아직 저장 안 된) 슬롯 -->
+        <div id="cell-staged-slots" class="cell-staged-area"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCellModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveCellAssignments()">
+        <i class="fas fa-save"></i> 저장
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 자재 모달 -->
+<div class="modal-overlay" id="material-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="material-modal-title">자재 등록</span>
+      <button class="modal-close" onclick="closeModal('material-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="material-record-id">
+
+      <!-- 이미지 업로드 영역 -->
+      <div class="form-group">
+        <label class="form-label">이미지</label>
+        <div class="mat-image-upload-area" id="mat-image-drop"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleMatImageDrop(event)"
+             onclick="document.getElementById('mat-image-file').click()"
+             onpaste="handleMatImagePaste(event)">
+          <div id="mat-image-preview-wrap">
+            <div class="mat-image-placeholder">
+              <i class="fas fa-image"></i>
+              <span>클릭하거나 이미지를 드래그/붙여넣기(Ctrl+V)</span>
+            </div>
+          </div>
+          <input type="file" id="mat-image-file" accept="image/*" style="display:none" onchange="handleMatImageFile(this)">
+        </div>
+        <button class="btn btn-xs btn-ghost" id="mat-image-clear-btn" style="display:none;margin-top:4px;color:#e02424" onclick="clearMatImage()">
+          <i class="fas fa-times"></i> 이미지 삭제
+        </button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">자재코드 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="mat-code" placeholder="예: MAT-018">
+        </div>
+        <div class="form-group">
+          <label class="form-label">자재명 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="mat-name" placeholder="자재명">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">브랜드/제조사</label>
+          <input type="text" class="form-control" id="mat-brand" placeholder="브랜드">
+        </div>
+        <div class="form-group">
+          <label class="form-label">규격/스펙</label>
+          <input type="text" class="form-control" id="mat-spec" placeholder="규격">
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">유형</label>
+          <select class="form-control" id="mat-category"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">단위</label>
+          <input type="text" class="form-control" id="mat-unit" placeholder="EA, ㎡, 장">
+        </div>
+        <div class="form-group">
+          <label class="form-label">단가 (원)</label>
+          <input type="number" class="form-control" id="mat-price" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">공급업체</label>
+          <input type="text" class="form-control" id="mat-supplier" placeholder="공급업체명">
+        </div>
+        <div class="form-group">
+          <label class="form-label">상태</label>
+          <select class="form-control" id="mat-status"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">비고</label>
+        <input type="text" class="form-control" id="mat-note" placeholder="비고">
+      </div>
+
+      <!-- 색상 다중 입력 -->
+      <div class="form-group">
+        <label class="form-label">색상 <span style="font-size:11px;color:#9ca3af;font-weight:400">색상코드 / 색상명 (여러 개 가능)</span></label>
+        <div class="mat-color-list" id="mat-color-list"></div>
+        <button type="button" class="mat-color-add-btn" onclick="addMatColorRow()">
+          <i class="fas fa-plus"></i> 색상 추가
+        </button>
+      </div>
+
+      <!-- 성적서 첨부 -->
+      <div class="form-group">
+        <label class="form-label">성적서
+          <span style="font-size:11px;color:#9ca3af;font-weight:400">PDF, 이미지, 문서 등</span>
+        </label>
+        <div class="mat-file-drop-area" id="mat-report-drop"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleMatFileDrop(event,'report')"
+             onclick="document.getElementById('mat-report-file').click()">
+          <i class="fas fa-file-alt mat-file-icon"></i>
+          <div class="mat-file-label">
+            <div class="mat-file-name" id="mat-report-name" style="display:none"></div>
+            <div class="mat-file-hint" id="mat-report-hint">클릭하거나 파일을 드래그해서 첨부</div>
+          </div>
+          <button type="button" class="mat-file-clear-btn" id="mat-report-clear" style="display:none"
+                  onclick="event.stopPropagation();clearMatFile('report')">
+            <i class="fas fa-times"></i>
+          </button>
+          <input type="file" id="mat-report-file"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.hwp,.ppt,.pptx,image/*"
+                 style="display:none" onchange="handleMatFileInput(this,'report')">
+        </div>
+      </div>
+
+      <!-- 시방서 첨부 -->
+      <div class="form-group">
+        <label class="form-label">시방서
+          <span style="font-size:11px;color:#9ca3af;font-weight:400">PDF, 이미지, 문서 등</span>
+        </label>
+        <div class="mat-file-drop-area" id="mat-specDoc-drop"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleMatFileDrop(event,'specDoc')"
+             onclick="document.getElementById('mat-specDoc-file').click()">
+          <i class="fas fa-file-contract mat-file-icon"></i>
+          <div class="mat-file-label">
+            <div class="mat-file-name" id="mat-specDoc-name" style="display:none"></div>
+            <div class="mat-file-hint" id="mat-specDoc-hint">클릭하거나 파일을 드래그해서 첨부</div>
+          </div>
+          <button type="button" class="mat-file-clear-btn" id="mat-specDoc-clear" style="display:none"
+                  onclick="event.stopPropagation();clearMatFile('specDoc')">
+            <i class="fas fa-times"></i>
+          </button>
+          <input type="file" id="mat-specDoc-file"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.hwp,.ppt,.pptx,image/*"
+                 style="display:none" onchange="handleMatFileInput(this,'specDoc')">
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('material-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveMaterial()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이미지 확대 미리보기 -->
+<div class="modal-overlay" id="image-preview-modal" onclick="closeModal('image-preview-modal')">
+  <div style="max-width:90vw;max-height:90vh;display:flex;align-items:center;justify-content:center">
+    <img id="image-preview-img" src="" style="max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+  </div>
+</div>
+
+<!-- 스펙-자재 연결 모달 -->
+<div class="modal-overlay" id="slot-material-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">스펙-자재 연결</span>
+      <button class="modal-close" onclick="closeModal('slot-material-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sm-record-id">
+      <div class="form-group">
+        <label class="form-label">스펙 <span class="required">*</span></label>
+        <select class="form-control" id="sm-slot"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">자재 <span class="required">*</span></label>
+        <select class="form-control" id="sm-material"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">비고</label>
+        <input type="text" class="form-control" id="sm-note" placeholder="비고">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('slot-material-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveSlotMaterial()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 변형 모달 -->
+<div class="modal-overlay" id="variant-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">변형(Variant) 추가</span>
+      <button class="modal-close" onclick="closeModal('variant-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="variant-record-id">
+      <div class="form-group">
+        <label class="form-label">플랫폼 <span class="required">*</span></label>
+        <select class="form-control" id="variant-lineup"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">변형 키 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="variant-key" placeholder="예: insulation_region">
+        </div>
+        <div class="form-group">
+          <label class="form-label">변형 이름</label>
+          <input type="text" class="form-control" id="variant-label" placeholder="예: 단열지역">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">변형 값</label>
+        <input type="text" class="form-control" id="variant-value" placeholder="예: true/false, A/B/C">
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-control" id="variant-desc" placeholder="변형 조건 설명"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('variant-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveVariant()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 분류 모달 -->
+<div class="modal-overlay" id="category-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title" id="category-modal-title">분류 추가</span>
+      <button class="modal-close" onclick="closeModal('category-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="category-record-id">
+      <div class="form-group">
+        <label class="form-label">분류명 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="category-name" placeholder="예: 마감, 구조, 건축, 설비">
+      </div>
+      <input type="hidden" id="category-sort" value="99">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('category-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveCategory()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 패키지 모달 -->
+<div class="modal-overlay" id="package-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title" id="package-modal-title">패키지 추가</span>
+      <button class="modal-close" onclick="closeModal('package-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="package-record-id">
+      <div class="form-group">
+        <label class="form-label">분류</label>
+        <select class="form-control" id="package-category">
+          <option value="">(분류 없음)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">패키지명 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="package-name" placeholder="예: 화장실 도기, 외벽 마감, 냉난방 시스템">
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-control" id="package-desc" placeholder="이 패키지에 대한 설명"></textarea>
+      </div>
+      <input type="hidden" id="package-sort" value="99">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('package-modal')">취소</button>
+      <button class="btn btn-primary" onclick="savePackage()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 스펙 자재 빠른 연결 모달 (카테고리 상세 스펙풀 패널에서 호출) -->
+<div class="modal-overlay" id="slot-mat-quick-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span class="modal-title" id="smq-title">자재 연결</span>
+        <span id="smq-type-badge" style="display:none"></span>
+      </div>
+      <button class="modal-close" onclick="closeModal('slot-mat-quick-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding-bottom:8px">
+      <input type="hidden" id="smq-slot-id">
+      <input type="hidden" id="smq-record-id">
+      <input type="hidden" id="smq-material">
+      <input type="hidden" id="smq-slot-type">
+      <input type="hidden" id="smq-replace-id">
+
+      <!-- 검색 입력 -->
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label">자재 검색 <span class="required">*</span></label>
+        <div style="position:relative">
+          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;pointer-events:none"></i>
+          <input type="text" class="form-control" id="smq-search"
+            placeholder="자재명, 코드, 업체명으로 검색..."
+            oninput="filterSmqMaterials(this.value)"
+            style="padding-left:32px">
+        </div>
+      </div>
+
+      <!-- 자재 목록 테이블 -->
+      <div id="smq-mat-table-wrap" class="smq-mat-table-wrap">
+        <table class="smq-mat-table" id="smq-mat-table">
+          <thead>
+            <tr>
+              <th>자재명</th>
+              <th>코드</th>
+              <th>업체명</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="smq-mat-tbody"></tbody>
+        </table>
+        <div id="smq-mat-empty" class="smq-mat-empty" style="display:none">
+          <i class="fas fa-box-open"></i> 검색 결과가 없습니다
+        </div>
+      </div>
+
+      <input type="hidden" id="smq-note">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('slot-mat-quick-modal')">취소</button>
+      <button class="btn btn-primary" id="smq-confirm-btn" onclick="saveSlotMatQuick()" disabled>연결</button>
+    </div>
+  </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ 삭제 확인</span>
+      <button class="modal-close" onclick="closeModal('confirm-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message" style="font-size:14px;color:#374151;line-height:1.6"></p>
+      <div class="confirm-no-undo">
+        <i class="fas fa-exclamation-triangle"></i> 삭제 후 되돌리기 불가
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">취소</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 컨테이너 -->
+<div id="toast-container"></div>
+
+
+<!-- 패키지 미리보기 모달 -->
+<div class="modal-overlay" id="pkg-preview-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title" id="pkg-preview-title"></span>
+        <span id="pkg-preview-sub" style="font-size:12px;color:#9ca3af;margin-left:8px;font-weight:400"></span>
+      </div>
+      <button class="modal-close" onclick="closeModal('pkg-preview-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div class="pkg-preview-table-wrap">
+        <table class="pkg-preview-table">
+          <colgroup>
+            <col style="width:110px">
+            <col style="width:200px">
+            <col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>항목</th>
+              <th>스펙</th>
+              <th>연결 자재</th>
+            </tr>
+          </thead>
+          <tbody id="pkg-preview-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('pkg-preview-modal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 자재 상세 팝업 모달 -->
+<div class="modal-overlay" id="mat-detail-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div>
+        <span class="modal-title" id="mat-detail-name"></span>
+        <span id="mat-detail-status-badge" style="margin-left:8px"></span>
+      </div>
+      <button class="modal-close" onclick="closeModal('mat-detail-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0 24px 8px">
+      <table class="mat-detail-table">
+        <tbody id="mat-detail-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('mat-detail-modal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+
+
+</body>
+</html>
