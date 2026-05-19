@@ -1968,8 +1968,8 @@ function renderDetailMatrix(stId) {
           <div class="matrix-header-name">${escHtml(s.name)}</div>
           ${s.code ? `<div class="matrix-header-code">${escHtml(s.code)}</div>` : ''}
           <div class="matrix-header-actions">
-            <button class="matrix-header-btn" onclick="editSetInDetail('${escHtml(s.id)}')" title="패키지 수정"><i class="fas fa-edit"></i></button>
-            <button class="matrix-header-btn danger" onclick="deleteSetInDetail('${escHtml(s.id)}','${escHtml(s.name)}')" title="패키지 삭제"><i class="fas fa-trash"></i></button>
+            <button class="matrix-header-btn" onclick="editGradeInDetail('${escHtml(s.id)}')" title="등급 수정"><i class="fas fa-edit"></i></button>
+            <button class="matrix-header-btn danger" onclick="deleteGradeInDetail('${escHtml(s.id)}','${escHtml(s.name)}')" title="등급 삭제"><i class="fas fa-trash"></i></button>
           </div>
         </th>`).join('');
 
@@ -2551,25 +2551,22 @@ async function removeSlotFromCell(assignmentId) {
 // 패키지 상세 — 등급 CRUD
 // ─────────────────────────────────────────
 function openGradeModalInDetail() {
-  const typeRow = document.getElementById('grade-package-row');
-  typeRow.style.display = 'none';
-  document.getElementById('grade-modal-title').textContent = '등급 추가';
-  document.getElementById('grade-record-id').value = '';
-  document.getElementById('grade-package-id').innerHTML =
-    `<option value="${escHtml(currentPackageId)}" selected>${escHtml(State.packages.find(t=>t.id===currentPackageId)?.name||'')}</option>`;
-  document.getElementById('grade-code').value = '';
-  document.getElementById('grade-name').value = '';
-  document.getElementById('grade-desc').value = '';
-  document.getElementById('grade-status').value = 'active';
-  openModal('grade-modal');
+  // 상세 페이지에서 등급 추가: 패키지를 currentPackageId로 고정
+  const fakeData = { package_id: currentPackageId };
+  openGradeModal(null, true);
+  // package_id 숨김 세팅 (openGradeModal 후 덮어쓰기)
+  setTimeout(() => {
+    document.getElementById('grade-package-id').innerHTML =
+      `<option value="${escHtml(currentPackageId)}" selected>${escHtml(State.packages.find(t=>t.id===currentPackageId)?.name||'')}</option>`;
+    document.getElementById('grade-package-id').value = currentPackageId;
+  }, 0);
 }
 
 function editGradeInDetail(setId) {
   const item = State.grades.find(s => s.id === setId);
   if (!item) return;
-  const typeRow = document.getElementById('grade-package-row');
-  typeRow.style.display = '';
-  openGradeModal(item);
+  // hidePackageRow=true: 상세 페이지에서는 패키지 선택 불필요
+  openGradeModal(item, true);
 }
 
 function deleteGradeInDetail(setId, name) {
@@ -3088,10 +3085,10 @@ function filterGrades(val) { setFilterText = val; renderGradeGroups(); }
 function filterGradesByLineup(val) { /* 하위호환 */ }
 function filterGradesByType(val)   { /* 하위호� */ }
 
-function openGradeModal(data = null) {
-  // 일반 목록에서 열 때는 패키지 선택 row 표시
+function openGradeModal(data = null, hidePackageRow = false) {
+  // hidePackageRow=true이면 패키지 선택 행 숨김 (상세 페이지에서 호출 시)
   const typeRow = document.getElementById('grade-package-row');
-  typeRow.style.display = '';
+  typeRow.style.display = hidePackageRow ? 'none' : '';
 
   document.getElementById('grade-modal-title').textContent = data ? '등급 수정' : '등급 추가';
   document.getElementById('grade-record-id').value = data ? (data.id||'') : '';
