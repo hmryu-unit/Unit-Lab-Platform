@@ -230,7 +230,7 @@ function escHtml(s) {
  *     getId         : 행 → 데이터 id 추출 함수 (el => el.dataset.id)
  *     onReorder     : async (orderedIds) => void  — 새 순서의 id 배열 전달, 저장 처리
  */
-function makeSortable(container, { itemSelector, handleSelector, getId, onReorder }) {
+function makeSortable(container, { itemSelector, handleSelector, getId, onReorder, skipDragData = false }) {
   let dragSrc = null;    // 드래그 중인 행 엘리먼트
 
   function getItems() {
@@ -241,7 +241,10 @@ function makeSortable(container, { itemSelector, handleSelector, getId, onReorde
     dragSrc = this;
     dragSrc.classList.add('sortable-dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', '');   // Firefox 필수
+    // skipDragData=true이면 이미 외부에서 setData를 처리했으므로 덮어쓰지 않음
+    if (!skipDragData) {
+      e.dataTransfer.setData('text/plain', '');   // Firefox 필수
+    }
   }
 
   function onDragEnd() {
@@ -273,6 +276,9 @@ function makeSortable(container, { itemSelector, handleSelector, getId, onReorde
     e.stopPropagation();
     if (!dragSrc || this === dragSrc) return;
 
+    // skipDragData 모드: slot-pool-sort 키가 비어있으면 정렬용 드래그가 아님 → 무시
+    if (skipDragData && !e.dataTransfer.getData('slot-pool-sort')) return;
+
     const rect  = this.getBoundingClientRect();
     const after = e.clientY >= rect.top + rect.height / 2;
 
@@ -290,21 +296,35 @@ function makeSortable(container, { itemSelector, handleSelector, getId, onReorde
 
   // 이벤트 바인딩
   getItems().forEach(el => {
-    if (handleSelector) {
+    if (skipDragData) {
+      // skipDragData=true: dragstart/dragend/draggable은 외부에서 이미 처리
+      // dragover, dragleave, drop만 추가로 바인딩
+      el.addEventListener('dragover',   onDragOver);
+      el.addEventListener('dragleave',  onDragLeave);
+      el.addEventListener('drop',       onDrop);
+      // dragSrc 추적을 위해 dragstart는 여전히 바인딩하되 setData는 skip
+      el.addEventListener('dragstart',  onDragStart);
+      el.addEventListener('dragend',    onDragEnd);
+    } else if (handleSelector) {
       const handle = el.querySelector(handleSelector);
       if (handle) {
         el.setAttribute('draggable', 'false');
         handle.addEventListener('mousedown', () => { el.setAttribute('draggable', 'true'); });
         handle.addEventListener('mouseup',   () => { el.setAttribute('draggable', 'false'); });
       }
+      el.addEventListener('dragstart',  onDragStart);
+      el.addEventListener('dragend',    onDragEnd);
+      el.addEventListener('dragover',   onDragOver);
+      el.addEventListener('dragleave',  onDragLeave);
+      el.addEventListener('drop',       onDrop);
     } else {
       el.setAttribute('draggable', 'true');
+      el.addEventListener('dragstart',  onDragStart);
+      el.addEventListener('dragend',    onDragEnd);
+      el.addEventListener('dragover',   onDragOver);
+      el.addEventListener('dragleave',  onDragLeave);
+      el.addEventListener('drop',       onDrop);
     }
-    el.addEventListener('dragstart',  onDragStart);
-    el.addEventListener('dragend',    onDragEnd);
-    el.addEventListener('dragover',   onDragOver);
-    el.addEventListener('dragleave',  onDragLeave);
-    el.addEventListener('drop',       onDrop);
   });
 }
 
@@ -1842,6 +1862,8 @@ async function quickRemoveChip(assignmentId) {
 async function handleCellDrop(event, itemId, setId) {
   event.preventDefault();
   event.currentTarget.classList.remove('drag-over');
+  // 정렬용 드래그(핸들)가 셀에 떨어진 경우 무시
+  if (event.dataTransfer.getData('slot-pool-sort')) return;
   const slotId = event.dataTransfer.getData('text/plain');
   if (!slotId) return;
 
@@ -1979,12 +2001,10 @@ function renderSlotPool(stId) {
 
     return `
       <div class="slot-pool-item"
-           draggable="true"
+           data-id="${escHtml(sl.id)}"
            data-slot-id="${escHtml(sl.id)}"
-           ondragstart="event.dataTransfer.setData('text/plain','${escHtml(sl.id)}');this.classList.add('dragging')"
-           ondragend="this.classList.remove('dragging')"
            title="셀로 드래그하여 배치">
-        <div class="slot-pool-drag-handle"><i class="fas fa-grip-vertical"></i></div>
+        <div class="slot-pool-drag-handle" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></div>
         <div class="slot-pool-info">
           <div class="slot-pool-top">
             <span class="slot-pool-name">${escHtml(sl.name)}</span>
@@ -2007,6 +2027,55 @@ function renderSlotPool(stId) {
         </div>
       </div>`;
   }).join('');
+
+  // 스펙 풀 아이템 이벤트 바인딩:
+  // - 핸들(grip) 드래그 → 순서 변경 (slot-pool-sort 키)
+  // - 아이템 본체 드래그 → 매트릭스 셀 배치 (text/plain 키)
+  container.querySelectorAll('.slot-pool-item').forEach(el => {
+    const slotId = el.dataset.slotId;
+
+    // 기본적으로 draggable 활성 → 아이템 전체 드래그 = 셀 배치용
+    el.setAttribute('draggable', 'true');
+
+    el.addEventListener('dragstart', e => {
+      // dragstart가 핸들에서 시작됐는지 확인
+      const fromHandle = e.target.closest('.slot-pool-drag-handle');
+      if (fromHandle) {
+        // 핸들 드래그 → 정렬용
+        e.dataTransfer.setData('slot-pool-sort', slotId);
+        e.dataTransfer.setData('text/plain', '');   // 셀 드롭 차단
+        e.dataTransfer.effectAllowed = 'move';
+      } else {
+        // 아이템 본체 드래그 → 셀 배치용
+        e.dataTransfer.setData('text/plain', slotId);
+        e.dataTransfer.setData('slot-pool-sort', '');  // 정렬 차단
+        e.dataTransfer.effectAllowed = 'copy';
+      }
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+    });
+  });
+
+  // 스펙 풀 순서 변경 makeSortable 적용
+  if (slots.length >= 2) {
+    makeSortable(container, {
+      itemSelector: '.slot-pool-item[data-id]',
+      handleSelector: '.slot-pool-drag-handle',
+      getId: el => el.dataset.id,
+      skipDragData: true,   // 각 아이템의 dragstart에서 직접 setData 처리
+      onReorder: async (orderedIds) => {
+        await Promise.all(orderedIds.map((id, i) => {
+          const slot = State.slots.find(s => s.id === id);
+          if (!slot) return Promise.resolve();
+          return API.put('slots', id, { ...slot, sort_order: i + 1 });
+        }));
+        await loadAll();
+        renderSlotPool(currentPackageId);
+      }
+    });
+  }
 }
 
 // ─────────────────────────────────────────
