@@ -2707,9 +2707,37 @@ function _renderSmqTable(list) {
   empty.style.display = 'none';
 
   tbody.innerHTML = list.map(m => {
-    const isDisc    = m.status === 'discontinued';
+    const isDisc     = m.status === 'discontinued';
     const isSelected = m.id === selectedId;
+
+    // 색상 파싱
+    let colors = [];
+    if (m.colors) { try { colors = JSON.parse(m.colors); } catch(e) { colors = []; } }
+
+    // 세부 속성 패널 HTML
+    const detailHtml = `
+      <tr class="smq-detail-row" id="smq-detail-${escHtml(m.id)}" style="display:none">
+        <td colspan="5" style="padding:0">
+          <div class="smq-detail-panel">
+            ${m.image_url ? `<img src="${escHtml(m.image_url)}" class="smq-detail-img" alt="자재 이미지">` : ''}
+            <div class="smq-detail-grid">
+              ${m.brand    ? `<div class="smq-detail-item"><span class="smq-detail-label">브랜드</span><span class="smq-detail-val">${escHtml(m.brand)}</span></div>` : ''}
+              ${m.spec     ? `<div class="smq-detail-item"><span class="smq-detail-label">규격</span><span class="smq-detail-val">${escHtml(m.spec)}</span></div>` : ''}
+              ${m.unit     ? `<div class="smq-detail-item"><span class="smq-detail-label">단위</span><span class="smq-detail-val">${escHtml(m.unit)}</span></div>` : ''}
+              ${m.unit_price ? `<div class="smq-detail-item"><span class="smq-detail-label">단가</span><span class="smq-detail-val">${Number(m.unit_price).toLocaleString()}원</span></div>` : ''}
+              ${m.note     ? `<div class="smq-detail-item smq-detail-item--full"><span class="smq-detail-label">비고</span><span class="smq-detail-val">${escHtml(m.note)}</span></div>` : ''}
+              ${colors.length > 0 ? `<div class="smq-detail-item smq-detail-item--full"><span class="smq-detail-label">색상</span><span class="smq-detail-val">${
+                colors.map(c => `<span class="smq-color-chip">${c.hex ? `<span class="smq-color-swatch" style="background:${escHtml(c.hex)}"></span>` : ''}${escHtml(c.code||'')}${c.name?` ${escHtml(c.name)}`:''}</span>`).join('')
+              }</span></div>` : ''}
+            </div>
+            ${(!m.brand && !m.spec && !m.unit && !m.unit_price && !m.note && colors.length === 0 && !m.image_url)
+              ? `<div style="font-size:12px;color:#9ca3af;padding:8px 0">등록된 세부 정보가 없습니다</div>` : ''}
+          </div>
+        </td>
+      </tr>`;
+
     return `<tr class="smq-mat-row${isSelected ? ' smq-mat-row--selected' : ''}${isDisc ? ' smq-mat-row--disc' : ''}"
+               data-mat-id="${escHtml(m.id)}"
                onclick="selectSmqMaterial('${escHtml(m.id)}')">
       <td>
         ${isDisc ? '<span style="margin-right:4px">⛔</span>' : ''}
@@ -2720,8 +2748,31 @@ function _renderSmqTable(list) {
       <td>${isDisc
         ? '<span class="badge badge-danger" style="font-size:10px">단종</span>'
         : '<span class="badge badge-success" style="font-size:10px">정상</span>'}</td>
-    </tr>`;
+      <td style="padding:0 6px;text-align:center">
+        <button class="smq-info-btn" title="세부 정보 보기"
+                onclick="event.stopPropagation();toggleSmqDetail('${escHtml(m.id)}', this)">
+          <i class="fas fa-info-circle"></i>
+        </button>
+      </td>
+    </tr>${detailHtml}`;
   }).join('');
+}
+
+// 자재 연결 모달 — 세부 정보 패널 토글
+function toggleSmqDetail(matId, btn) {
+  const row = document.getElementById(`smq-detail-${matId}`);
+  if (!row) return;
+  const isOpen = row.style.display !== 'none';
+  // 다른 열려있는 패널들 모두 닫기
+  document.querySelectorAll('.smq-detail-row').forEach(r => {
+    r.style.display = 'none';
+  });
+  document.querySelectorAll('.smq-info-btn').forEach(b => b.classList.remove('smq-info-btn--active'));
+  // 현재 패널 토글
+  if (!isOpen) {
+    row.style.display = '';
+    btn.classList.add('smq-info-btn--active');
+  }
 }
 
 // 자재 연결 모달 — 검색 필터 (slot_type 스코프 유지)
