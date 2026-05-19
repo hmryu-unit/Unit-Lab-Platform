@@ -4277,3 +4277,112 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   background: #dcfce7;
   color: #15803d;
 }
+
+/* ===== 속성 정의 (Attr Def) — 선택지 관리 페이지 ===== */
+/* enum-item-row: 속성 섹션 포함 시 세로 레이아웃으로 변경 */
+.enum-item-row {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+}
+.enum-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  min-height: 40px;
+}
+.enum-attr-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.enum-attr-toggle-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+.enum-attr-count-badge {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 99px;
+  font-size: 10px;
+  padding: 1px 5px;
+  margin-left: 2px;
+}
+.enum-attr-section {
+  border-top: 1px dashed var(--gray-200);
+  margin: 0 10px 8px;
+  padding-top: 10px;
+}
+.enum-attr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.enum-attr-header-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.enum-attr-empty {
+  font-size: 12px;
+  color: var(--gray-400);
+  padding: 6px 0;
+  font-style: italic;
+}
+.enum-attr-def-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--gray-50);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.enum-attr-def-name {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.enum-attr-def-unit {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+.enum-attr-def-key {
+  color: var(--gray-400);
+  font-size: 10px;
+  font-family: monospace;
+}
+
+/* ===== 스펙 풀 — 속성 칩 ===== */
+.slot-pool-attrs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 3px 0 2px;
+}
+.slot-pool-attr-chip {
+  font-size: 10px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.slot-pool-attr-chip strong {
+  font-weight: 700;
+}

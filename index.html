@@ -630,11 +630,19 @@
       </div>
       <div class="form-group">
         <label class="form-label">유형</label>
-        <select class="form-control" id="slot-type"></select>
+        <select class="form-control" id="slot-type"
+                onchange="_renderSlotAttrFields(this.value, {})"></select>
+      </div>
+      <!-- 유형별 속성 입력 필드 (동적 렌더) -->
+      <div id="slot-attr-fields-wrap" style="border-top:1px solid #f3f4f6;margin:4px 0 8px;padding-top:10px">
+        <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <i class="fas fa-sliders-h" style="font-size:10px"></i> 유형별 속성
+        </div>
+        <div id="slot-attr-fields"></div>
       </div>
       <div class="form-group">
         <label class="form-label">설명</label>
-        <textarea class="form-control" id="slot-desc" rows="2" placeholder="스펙 설명"></textarea>
+        <textarea class="form-control" id="slot-desc" rows="2" placeholder="스펙 설명 (선택)"></textarea>
       </div>
     </div>
     <div class="modal-footer">

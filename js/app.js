@@ -220,6 +220,43 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ===== 스펙 속성값 파싱/직렬화 헬퍼 =====
+// slots.description 필드에 "일반설명\n[[ATTRS]]\n{json}" 형태로 저장
+const ATTRS_SEP = '\n[[ATTRS]]\n';
+
+/** description 문자열 → { desc, attrs } */
+function parseSlotDesc(raw) {
+  if (!raw) return { desc: '', attrs: {} };
+  const idx = raw.indexOf(ATTRS_SEP);
+  if (idx === -1) return { desc: raw, attrs: {} };
+  const desc = raw.slice(0, idx);
+  try {
+    const attrs = JSON.parse(raw.slice(idx + ATTRS_SEP.length));
+    return { desc, attrs: typeof attrs === 'object' && attrs ? attrs : {} };
+  } catch {
+    return { desc, attrs: {} };
+  }
+}
+
+/** { desc, attrs } → description 문자열 */
+function serializeSlotDesc(desc, attrs) {
+  const cleanDesc = (desc || '').trim();
+  const hasAttrs  = attrs && Object.keys(attrs).length > 0;
+  if (!hasAttrs) return cleanDesc;
+  return cleanDesc + ATTRS_SEP + JSON.stringify(attrs);
+}
+
+/** State.enums에서 특정 slot_type의 속성 정의 목록 반환
+ *  group_key = "slot_attr_def:{slotType}"
+ *  → [{ id, value(key), label(표시명), color(단위), sort_order }]
+ */
+function getAttrDefs(slotType) {
+  if (!slotType) return [];
+  return (State.enums || [])
+    .filter(e => e.group_key === `slot_attr_def:${slotType}`)
+    .sort((a, b) => (a.sort_order || 99) - (b.sort_order || 99));
+}
+
 // ===== 드래그앤드롭 정렬 공통 유틸 =====
 /**
  * makeSortable(container, options)
@@ -1999,6 +2036,16 @@ function renderSlotPool(stId) {
       : null;
     const assignCount = State.slotAssignments.filter(a => a.slot_id === sl.id && a.package_id === stId).length;
 
+    // 속성값 파싱 & 표시용 태그 생성
+    const { attrs } = parseSlotDesc(sl.description);
+    const attrDefs   = getAttrDefs(sl.slot_type);
+    const attrChips  = attrDefs
+      .filter(def => attrs[def.value])
+      .map(def => {
+        const unit = def.color ? ` ${def.color}` : '';
+        return `<span class="slot-pool-attr-chip" title="${escHtml(def.label||def.value)}">${escHtml(def.label||def.value)}: <strong>${escHtml(attrs[def.value])}${escHtml(unit)}</strong></span>`;
+      }).join('');
+
     return `
       <div class="slot-pool-item"
            data-id="${escHtml(sl.id)}"
@@ -2011,11 +2058,11 @@ function renderSlotPool(stId) {
             ${sl.code ? `<span class="slot-pool-code">${escHtml(sl.code)}</span>` : ''}
             ${categoryBadge(sl.slot_type||'기타')}
           </div>
+          ${attrChips ? `<div class="slot-pool-attrs">${attrChips}</div>` : ''}
           <div class="slot-pool-bottom">
             ${matName
               ? `<span class="slot-pool-mat"><i class="fas fa-box"></i> ${escHtml(matName)}</span>`
               : `<span class="slot-pool-mat-none">자재 미연결</span>`}
-
           </div>
         </div>
         <div class="slot-pool-actions">
@@ -2361,6 +2408,7 @@ function openSlotModalInDetail() {
   document.getElementById('slot-name').value = '';
   document.getElementById('slot-type').value = '기타';
   document.getElementById('slot-desc').value = '';
+  _renderSlotAttrFields('기타', {});
   openModal('slot-modal');
 }
 
@@ -2373,7 +2421,9 @@ function editSlotInDetail(slotId) {
   document.getElementById('slot-code').value = item.code || item.id || '';
   document.getElementById('slot-name').value = item.name || '';
   document.getElementById('slot-type').value = item.slot_type || '기타';
-  document.getElementById('slot-desc').value = item.description || '';
+  const { desc, attrs } = parseSlotDesc(item.description);
+  document.getElementById('slot-desc').value = desc;
+  _renderSlotAttrFields(item.slot_type || '기타', attrs);
   openModal('slot-modal');
 }
 
@@ -3185,21 +3235,66 @@ function openSlotModal(data = null) {
   document.getElementById('slot-package-id').value = data ? (data.package_id||'') : '';
   document.getElementById('slot-code').value = data ? (data.code||data.id||'') : '';
   document.getElementById('slot-name').value = data ? data.name : '';
-  document.getElementById('slot-type').value = data ? (data.slot_type||'기타') : '기타';
-  document.getElementById('slot-desc').value = data ? (data.description||'') : '';
+  const slotType = data ? (data.slot_type||'기타') : '기타';
+  document.getElementById('slot-type').value = slotType;
+  const { desc, attrs } = parseSlotDesc(data ? (data.description||'') : '');
+  document.getElementById('slot-desc').value = desc;
+  _renderSlotAttrFields(slotType, attrs);
   openModal('slot-modal');
+}
+
+/** slot_type 변경 시 속성 입력 폼 동적 렌더링 */
+function _renderSlotAttrFields(slotType, currentAttrs = {}) {
+  const container = document.getElementById('slot-attr-fields');
+  if (!container) return;
+
+  const defs = getAttrDefs(slotType);
+  if (defs.length === 0) {
+    container.innerHTML = `<div style="font-size:12px;color:#9ca3af;padding:4px 0">
+      이 유형에 정의된 속성이 없습니다. <span class="link-btn" onclick="navigate('enums')">선택지 관리</span>에서 추가할 수 있습니다.
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = defs.map(def => {
+    const key = def.value;   // 속성 key
+    const label = def.label || def.value;
+    const unit = def.color || '';  // color 필드 = 단위
+    const val = currentAttrs[key] || '';
+    return `
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="font-size:12px">
+          ${escHtml(label)}
+          ${unit ? `<span style="color:#9ca3af;font-weight:400;margin-left:4px">(${escHtml(unit)})</span>` : ''}
+        </label>
+        <input type="text" class="form-control" data-attr-key="${escHtml(key)}"
+               value="${escHtml(val)}"
+               placeholder="${unit ? escHtml(unit) : escHtml(label) + ' 값 입력'}">
+      </div>`;
+  }).join('');
 }
 
 async function saveSlot() {
   const recordId  = document.getElementById('slot-record-id').value;
   const codeVal   = document.getElementById('slot-code').value.trim();
   const packageId = document.getElementById('slot-package-id').value;
+  const slotType  = document.getElementById('slot-type').value;
+  const descRaw   = document.getElementById('slot-desc').value.trim();
+
+  // 속성 필드값 수집
+  const attrs = {};
+  document.querySelectorAll('#slot-attr-fields [data-attr-key]').forEach(input => {
+    const key = input.dataset.attrKey;
+    const val = input.value.trim();
+    if (val) attrs[key] = val;
+  });
+
   const payload = {
-    code:       codeVal || undefined,
-    name:       document.getElementById('slot-name').value.trim(),
-    package_id: packageId || undefined,
-    slot_type:   document.getElementById('slot-type').value,
-    description: document.getElementById('slot-desc').value.trim()
+    code:        codeVal || undefined,
+    name:        document.getElementById('slot-name').value.trim(),
+    package_id:  packageId || undefined,
+    slot_type:   slotType,
+    description: serializeSlotDesc(descRaw, attrs)
   };
   if (codeVal) payload.id = codeVal;
 
@@ -4070,7 +4165,10 @@ function renderEnumsPage() {
             <div class="enum-items-list" data-group="${escHtml(key)}" data-editable="${meta.editable}">
               ${items.length === 0
                 ? `<div class="enum-empty">등록된 선택지가 없습니다</div>`
-                : items.map(e => _renderEnumItem(e, meta.editable)).join('')}
+                : items.map(e => {
+                    const attrDefs = key === 'material_type' ? getAttrDefs(e.value) : [];
+                    return _renderEnumItem(e, meta.editable, attrDefs);
+                  }).join('')}
             </div>
           </div>`;
       }).join('')}
@@ -4080,31 +4178,77 @@ function renderEnumsPage() {
   container.querySelectorAll('.enum-items-list[data-editable="true"]').forEach(listEl => {
     _setupEnumListDnD(listEl);
   });
+
+  // 속성 정의 섹션 토글 초기화
+  container.querySelectorAll('.enum-attr-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const section = btn.closest('.enum-item-row').querySelector('.enum-attr-section');
+      if (!section) return;
+      const open = section.style.display !== 'none';
+      section.style.display = open ? 'none' : 'block';
+      btn.querySelector('i').className = open ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+    });
+  });
 }
 
-function _renderEnumItem(e, editable) {
+function _renderEnumItem(e, editable, attrDefs = []) {
   const colorDot = e.color
     ? `<span class="enum-color-dot" style="background:${escHtml(e.color)}"></span>`
     : `<span class="enum-color-dot" style="background:#e5e7eb"></span>`;
+
+  // 속성 정의 섹션 (material_type 그룹에만 표시)
+  const hasAttrSection = Array.isArray(attrDefs);
+  const attrSection = hasAttrSection ? `
+    <div class="enum-attr-section" style="display:none">
+      <div class="enum-attr-header">
+        <span class="enum-attr-header-label"><i class="fas fa-list-ul"></i> 속성 항목 <span class="badge badge-gray" style="font-size:10px">${attrDefs.length}</span></span>
+        <button class="btn btn-xs btn-secondary" onclick="openAttrDefAddModal('${escHtml(e.value)}','${escHtml(e.label||e.value)}')" title="속성 추가">
+          <i class="fas fa-plus"></i> 속성 추가
+        </button>
+      </div>
+      <div class="enum-attr-list" data-slot-type="${escHtml(e.value)}">
+        ${attrDefs.length === 0
+          ? `<div class="enum-attr-empty">아직 속성이 없습니다. <strong>속성 추가</strong>로 항목을 정의하세요.</div>`
+          : attrDefs.map(def => `
+              <div class="enum-attr-def-row" data-attr-id="${escHtml(def.id)}">
+                <span class="enum-attr-def-name">${escHtml(def.label || def.value)}</span>
+                ${def.color ? `<span class="enum-attr-def-unit">${escHtml(def.color)}</span>` : ''}
+                ${def.value && def.value !== (def.label||'') ? `<span class="enum-attr-def-key">${escHtml(def.value)}</span>` : ''}
+                <span style="flex:1"></span>
+                <button class="enum-action-btn" onclick="openAttrDefEditModal('${escHtml(def.id)}')" title="수정"><i class="fas fa-pen"></i></button>
+                <button class="enum-action-btn enum-action-btn--del" onclick="deleteAttrDef('${escHtml(def.id)}','${escHtml(def.label||def.value)}')" title="삭제"><i class="fas fa-trash"></i></button>
+              </div>`).join('')}
+      </div>
+    </div>` : '';
+
   return `
     <div class="enum-item-row" data-id="${escHtml(e.id)}" draggable="${editable}">
-      ${editable
-        ? `<span class="enum-drag-handle" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>`
-        : `<span style="width:16px;display:inline-block"></span>`}
-      ${colorDot}
-      <span class="enum-item-value">${escHtml(e.label || e.value)}</span>
-      ${e.label && e.label !== e.value
-        ? `<span class="enum-item-code">${escHtml(e.value)}</span>`
-        : ''}
-      <span class="enum-item-spacer"></span>
-      ${editable ? `
-        <button class="enum-action-btn" onclick="openEnumEditModal('${escHtml(e.id)}')" title="수정">
-          <i class="fas fa-pen"></i>
-        </button>
-        <button class="enum-action-btn enum-action-btn--del" onclick="deleteEnum('${escHtml(e.id)}','${escHtml(e.label||e.value)}')" title="삭제">
-          <i class="fas fa-trash"></i>
-        </button>` : `
-        <span class="enum-system-badge">시스템</span>`}
+      <div class="enum-item-main">
+        ${editable
+          ? `<span class="enum-drag-handle" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>`
+          : `<span style="width:16px;display:inline-block"></span>`}
+        ${colorDot}
+        <span class="enum-item-value">${escHtml(e.label || e.value)}</span>
+        ${e.label && e.label !== e.value
+          ? `<span class="enum-item-code">${escHtml(e.value)}</span>`
+          : ''}
+        <span class="enum-item-spacer"></span>
+        ${hasAttrSection ? `
+          <button class="enum-attr-toggle-btn" title="속성 정의 펼치기/접기">
+            <i class="fas fa-chevron-down"></i>
+            <span style="font-size:11px;margin-left:3px">속성 정의</span>
+            ${attrDefs.length > 0 ? `<span class="enum-attr-count-badge">${attrDefs.length}</span>` : ''}
+          </button>` : ''}
+        ${editable ? `
+          <button class="enum-action-btn" onclick="openEnumEditModal('${escHtml(e.id)}')" title="수정">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button class="enum-action-btn enum-action-btn--del" onclick="deleteEnum('${escHtml(e.id)}','${escHtml(e.label||e.value)}')" title="삭제">
+            <i class="fas fa-trash"></i>
+          </button>` : `
+          <span class="enum-system-badge">시스템</span>`}
+      </div>
+      ${attrSection}
     </div>`;
 }
 
@@ -4309,6 +4453,129 @@ async function deleteEnum(enumId, label) {
         await loadAll();
         renderEnumsPage();
         _populateDynamicSelects();
+      } catch(err) {
+        showToast('삭제 실패: ' + err.message, 'error');
+      }
+    }
+  );
+}
+
+// ===================================================
+// ===== 속성 정의(Attr Def) CRUD — slot_attr_def:{slotType} 그룹 활용 =====
+// ===================================================
+
+/** 속성 정의 추가 모달 열기 */
+function openAttrDefAddModal(slotType, slotTypeLabel) {
+  _openAttrDefModal({ slotType, slotTypeLabel }, false);
+}
+
+/** 속성 정의 수정 모달 열기 */
+function openAttrDefEditModal(enumId) {
+  const e = State.enums.find(x => x.id === enumId);
+  if (!e) return;
+  // group_key = "slot_attr_def:단열재" → slotType = "단열재"
+  const slotType = e.group_key.replace('slot_attr_def:', '');
+  _openAttrDefModal({ ...e, slotType }, true);
+}
+
+function _openAttrDefModal(data, isEdit) {
+  let modal = document.getElementById('attr-def-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'attr-def-modal';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+          <span class="modal-title" id="attr-def-modal-title">속성 항목 추가</span>
+          <button class="modal-close" onclick="closeModal('attr-def-modal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="attr-def-record-id">
+          <input type="hidden" id="attr-def-slot-type">
+          <div class="form-group">
+            <label class="form-label">속성 이름 <span class="required">*</span></label>
+            <input type="text" class="form-control" id="attr-def-label" placeholder="예: 열관류율, 가격대, 두께">
+            <div style="font-size:11px;color:#9ca3af;margin-top:4px">스펙 입력 폼에서 보여질 항목 이름입니다</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">단위 / 기준 예시
+              <span style="font-size:11px;color:#9ca3af;margin-left:4px">— 입력 힌트로 표시됩니다</span>
+            </label>
+            <input type="text" class="form-control" id="attr-def-unit" placeholder="예: W/m²K, 만원, mm, %">
+          </div>
+          <div class="form-group">
+            <label class="form-label">속성 키(Key)
+              <span style="font-size:11px;color:#9ca3af;margin-left:4px">— 비워두면 이름과 동일</span>
+            </label>
+            <input type="text" class="form-control" id="attr-def-value" placeholder="비워두면 표시 이름과 동일 (영문 권장)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">정렬 순서</label>
+            <input type="number" class="form-control" id="attr-def-sort" min="1" style="width:120px" placeholder="숫자 (작을수록 위)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('attr-def-modal')">취소</button>
+          <button class="btn btn-primary" onclick="saveAttrDef()">저장</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  const typeName = data.slotTypeLabel || data.slotType || '';
+  document.getElementById('attr-def-modal-title').textContent =
+    (isEdit ? '속성 항목 수정' : '속성 항목 추가') + (typeName ? ` — ${typeName}` : '');
+  document.getElementById('attr-def-record-id').value = isEdit ? (data.id || '') : '';
+  document.getElementById('attr-def-slot-type').value  = data.slotType || '';
+  document.getElementById('attr-def-label').value      = isEdit ? (data.label || data.value || '') : '';
+  document.getElementById('attr-def-unit').value       = isEdit ? (data.color || '') : '';   // color 필드를 단위로 재활용
+  document.getElementById('attr-def-value').value      = isEdit ? (data.value || '') : '';
+  document.getElementById('attr-def-sort').value       = isEdit && data.sort_order != null ? data.sort_order : '';
+  openModal('attr-def-modal');
+}
+
+async function saveAttrDef() {
+  const id        = document.getElementById('attr-def-record-id').value.trim();
+  const slotType  = document.getElementById('attr-def-slot-type').value.trim();
+  const labelVal  = document.getElementById('attr-def-label').value.trim();
+  const unit      = document.getElementById('attr-def-unit').value.trim();
+  const valueVal  = document.getElementById('attr-def-value').value.trim() || labelVal;
+  const sort_order= parseInt(document.getElementById('attr-def-sort').value) || 99;
+
+  if (!labelVal) { showToast('속성 이름을 입력하세요', 'error'); return; }
+  if (!slotType) { showToast('유형 정보가 없습니다', 'error'); return; }
+
+  const group_key   = `slot_attr_def:${slotType}`;
+  const group_label = `속성정의:${slotType}`;
+  // color 필드 = 단위, label = 표시명, value = 속성 key
+  const payload = { group_key, group_label, label: labelVal, value: valueVal, color: unit, sort_order, is_system: false };
+
+  try {
+    if (id) {
+      await API.put('enums', id, { ...payload, id });
+      showToast('속성 항목이 수정되었습니다');
+    } else {
+      await API.post('enums', payload);
+      showToast('속성 항목이 추가되었습니다');
+    }
+    closeModal('attr-def-modal');
+    await loadAll();
+    renderEnumsPage();
+  } catch(err) {
+    showToast('저장 실패: ' + err.message, 'error');
+  }
+}
+
+async function deleteAttrDef(enumId, label) {
+  confirmDelete(
+    `"${label}" 속성 항목을 삭제하시겠습니까?\n이미 입력된 스펙 속성값에는 영향을 주지 않습니다.`,
+    async () => {
+      try {
+        await API.delete('enums', enumId);
+        showToast('삭제되었습니다');
+        await loadAll();
+        renderEnumsPage();
       } catch(err) {
         showToast('삭제 실패: ' + err.message, 'error');
       }
