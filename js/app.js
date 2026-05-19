@@ -2210,7 +2210,9 @@ function filterSlotPool(val) {
 }
 
 function renderSlotPool(stId) {
-  let slots = State.slots.filter(sl => sl.package_id === stId);
+  let slots = State.slots
+    .filter(sl => sl.package_id === stId)
+    .sort((a, b) => (a.name||'').localeCompare(b.name||'', 'ko'));
   const totalCount = slots.length;
   if (slotPoolFilter) {
     const q = slotPoolFilter.toLowerCase();
