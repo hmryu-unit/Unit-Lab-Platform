@@ -3268,15 +3268,14 @@ function renderSlotTable() {
            </span>`
         : '';
 
-    // 열 순서: 유형 - 코드 - 항목 - 스펙명 - 대상 패키지 - 연결 자재 - 관리
+    // 열 순서: 유형 - 스펙명 - 대상 패키지 - 항목 - 연결 자재 - 관리
     return `<tr>
       <td>${categoryBadge(sl.slot_type||'기타')}</td>
-      <td><span class="font-mono" style="font-size:12px">${escHtml(sl.code||'—')}</span></td>
-      <td><div class="slot-ref-wrap">${itemCell}</div></td>
       <td style="font-weight:600">${escHtml(sl.name)}
         ${sl.description ? `<div style="font-size:11px;color:#9ca3af;font-weight:400;margin-top:2px">${escHtml(sl.description)}</div>` : ''}
       </td>
       <td><div class="slot-ref-wrap">${pkgCell}</div></td>
+      <td><div class="slot-ref-wrap">${itemCell}</div></td>
       <td><div class="slot-mat-list">${matCell}</div></td>
       <td>
         <div style="display:flex;gap:4px">
@@ -3313,26 +3312,24 @@ function renderSlotTable() {
         <div class="table-wrapper" style="margin-bottom:0;border-radius:0 0 8px 8px;border-top:none">
           <table>
             <colgroup>
-              <col style="width:80px">
-              <col style="width:70px">
-              <col style="width:110px">
-              <col style="width:160px">
+              <col style="width:90px">
+              <col style="min-width:160px">
+              <col style="width:140px">
               <col style="width:130px">
-              <col style="width:200px">
-              <col style="width:76px">
+              <col style="width:210px">
+              <col style="width:80px">
             </colgroup>
             <thead>
               <tr>
                 <th>유형</th>
-                <th>코드</th>
-                <th>항목</th>
                 <th>스펙명</th>
                 <th>대상 패키지</th>
+                <th>항목</th>
                 <th>연결 자재</th>
                 <th>관리</th>
               </tr>
             </thead>
-            <tbody>${slots.map(_slotRow).join('')}</tbody>
+            <tbody>${slots.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko')).map(_slotRow).join('')}</tbody>
           </table>
         </div>
       </div>`;
