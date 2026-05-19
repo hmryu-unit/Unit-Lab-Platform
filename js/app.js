@@ -2729,24 +2729,27 @@ function _renderSmqTable(list) {
     let colors = [];
     if (m.colors) { try { colors = JSON.parse(m.colors); } catch(e) { colors = []; } }
 
-    // 세부 속성 패널 HTML
+    // 세부 속성 패널 HTML — 코드·규격·단위·단가 한 줄 표시
+    const infoItems = [
+      m.code       ? `<span class="smq-info-chip"><span class="smq-info-lbl">코드</span>${escHtml(m.code)}</span>` : '',
+      m.spec       ? `<span class="smq-info-chip"><span class="smq-info-lbl">규격</span>${escHtml(m.spec)}</span>` : '',
+      m.unit       ? `<span class="smq-info-chip"><span class="smq-info-lbl">단위</span>${escHtml(m.unit)}</span>` : '',
+      m.unit_price ? `<span class="smq-info-chip"><span class="smq-info-lbl">단가</span>${Number(m.unit_price).toLocaleString()}원</span>` : '',
+    ].filter(Boolean);
+    const hasDetail = infoItems.length > 0 || m.note || colors.length > 0 || m.image_url;
     const detailHtml = `
       <tr class="smq-detail-row" id="smq-detail-${escHtml(m.id)}" style="display:none">
         <td colspan="5" style="padding:0">
           <div class="smq-detail-panel">
             ${m.image_url ? `<img src="${escHtml(m.image_url)}" class="smq-detail-img" alt="자재 이미지">` : ''}
-            <div class="smq-detail-grid">
-              ${m.brand    ? `<div class="smq-detail-item"><span class="smq-detail-label">브랜드</span><span class="smq-detail-val">${escHtml(m.brand)}</span></div>` : ''}
-              ${m.spec     ? `<div class="smq-detail-item"><span class="smq-detail-label">규격</span><span class="smq-detail-val">${escHtml(m.spec)}</span></div>` : ''}
-              ${m.unit     ? `<div class="smq-detail-item"><span class="smq-detail-label">단위</span><span class="smq-detail-val">${escHtml(m.unit)}</span></div>` : ''}
-              ${m.unit_price ? `<div class="smq-detail-item"><span class="smq-detail-label">단가</span><span class="smq-detail-val">${Number(m.unit_price).toLocaleString()}원</span></div>` : ''}
-              ${m.note     ? `<div class="smq-detail-item smq-detail-item--full"><span class="smq-detail-label">비고</span><span class="smq-detail-val">${escHtml(m.note)}</span></div>` : ''}
-              ${colors.length > 0 ? `<div class="smq-detail-item smq-detail-item--full"><span class="smq-detail-label">색상</span><span class="smq-detail-val">${
+            <div class="smq-detail-body">
+              ${infoItems.length > 0 ? `<div class="smq-info-row">${infoItems.join('')}</div>` : ''}
+              ${m.note ? `<div class="smq-detail-note"><span class="smq-info-lbl">비고</span>${escHtml(m.note)}</div>` : ''}
+              ${colors.length > 0 ? `<div class="smq-color-row"><span class="smq-info-lbl">색상</span>${
                 colors.map(c => `<span class="smq-color-chip">${c.hex ? `<span class="smq-color-swatch" style="background:${escHtml(c.hex)}"></span>` : ''}${escHtml(c.code||'')}${c.name?` ${escHtml(c.name)}`:''}</span>`).join('')
-              }</span></div>` : ''}
+              }</div>` : ''}
+              ${!hasDetail ? `<span style="font-size:12px;color:#9ca3af">등록된 세부 정보가 없습니다</span>` : ''}
             </div>
-            ${(!m.brand && !m.spec && !m.unit && !m.unit_price && !m.note && colors.length === 0 && !m.image_url)
-              ? `<div style="font-size:12px;color:#9ca3af;padding:8px 0">등록된 세부 정보가 없습니다</div>` : ''}
           </div>
         </td>
       </tr>`;
@@ -2758,8 +2761,8 @@ function _renderSmqTable(list) {
         ${isDisc ? '<span style="margin-right:4px">⛔</span>' : ''}
         <span class="smq-mat-name">${escHtml(m.name)}</span>
       </td>
-      <td><span class="font-mono" style="font-size:11px;color:#6b7280">${escHtml(m.code||'-')}</span></td>
       <td style="color:#6b7280">${escHtml(m.supplier||'-')}</td>
+      <td style="color:#6b7280">${escHtml(m.brand||'-')}</td>
       <td>${isDisc
         ? '<span class="badge badge-danger" style="font-size:10px">단종</span>'
         : '<span class="badge badge-success" style="font-size:10px">정상</span>'}</td>

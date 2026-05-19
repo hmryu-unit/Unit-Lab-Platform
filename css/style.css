@@ -5016,41 +5016,63 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   align-self: flex-start;
 }
 
-/* 속성 그리드 */
-.smq-detail-grid {
+/* 속성 표시 영역 */
+.smq-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+/* 코드·규격·단위·단가 한 줄 */
+.smq-info-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 20px;
-  flex: 1;
-  align-content: flex-start;
+  gap: 6px;
+  align-items: center;
 }
-.smq-detail-item {
+.smq-info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.smq-info-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-right: 2px;
+}
+
+/* 비고 한 줄 */
+.smq-detail-note {
+  font-size: 12px;
+  color: #6b7280;
   display: flex;
   align-items: baseline;
   gap: 6px;
-  min-width: 120px;
 }
-.smq-detail-item--full {
-  width: 100%;
-  min-width: 100%;
-}
-.smq-detail-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #9ca3af;
-  white-space: nowrap;
-  flex-shrink: 0;
-  letter-spacing: 0.2px;
-  text-transform: uppercase;
-}
-.smq-detail-val {
-  font-size: 13px;
-  color: #374151;
+
+/* 색상 한 줄 */
+.smq-color-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
   align-items: center;
+  gap: 4px;
 }
+
+/* 하위 호환 삭제 (smq-detail-grid 등) */
+.smq-detail-grid, .smq-detail-item, .smq-detail-item--full,
+.smq-detail-label, .smq-detail-val { display: revert; }
 
 /* 색상 칩 */
 .smq-color-chip {
