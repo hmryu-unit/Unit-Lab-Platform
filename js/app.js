@@ -148,11 +148,11 @@ function formatDate(ts) {
 
 function statusBadge(s) {
   const map = {
-    active: '',  // 정상 운영 중엔 배지 표시 안 함
-    inactive: '<span class="badge badge-gray">비활성</span>',
-    draft: '<span class="badge badge-warning">초안</span>',
-    discontinued: '<span class="badge badge-danger">단종</span>',
-    pending: '<span class="badge badge-warning">검토중</span>'
+    active:       '',  // 활성화 상태엔 배지 표시 안 함
+    inactive:     '<span class="badge badge-gray">비활성화</span>',
+    discontinued: '<span class="badge badge-gray">비활성화</span>',  // 구버전 호환
+    draft:        '<span class="badge badge-warning">초안</span>',
+    pending:      '<span class="badge badge-warning">검토중</span>',
   };
   return map[s] ?? `<span class="badge badge-gray">${s}</span>`;
 }
@@ -708,7 +708,7 @@ async function renderDashboard() {
   if (existing) existing.remove();
 
   // 통계 카드
-  const disc = State.materials.filter(m => m.status === 'discontinued').length;
+  const disc = State.materials.filter(m => m.status === 'inactive' || m.status === 'discontinued').length;
   const statsHtml = `
     <div class="stat-card">
       <div class="stat-icon blue">🏗️</div>
@@ -745,7 +745,7 @@ async function renderDashboard() {
     <div class="stat-card">
       <div class="stat-icon red">⚠️</div>
       <div class="stat-info">
-        <div class="stat-label">단종 자재</div>
+        <div class="stat-label">비활성 자재</div>
         <div class="stat-value" style="color:#e02424">${disc}</div>
         <div class="stat-sub">교체 필요</div>
       </div>
@@ -791,24 +791,24 @@ async function renderDashboard() {
       </table>
     </div>`;
 
-  // 단종 자재 알림
-  const discMats = State.materials.filter(m => m.status === 'discontinued');
+  // 비활성화 자재 알림
+  const discMats = State.materials.filter(m => m.status === 'inactive' || m.status === 'discontinued');
   if (discMats.length === 0) {
     document.getElementById('dashboard-discontinued').innerHTML = `
       <div class="empty-state" style="padding:32px">
         <div class="empty-icon">✅</div>
-        <h3>단종 자재 없음</h3>
+        <h3>비활성화 자재 없음</h3>
         <p>모든 자재가 정상 운영중입니다</p>
       </div>`;
   } else {
     document.getElementById('dashboard-discontinued').innerHTML = discMats.map(m => `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f3f4f6">
-        <span class="status-dot discontinued"></span>
+        <span class="status-dot inactive"></span>
         <div style="flex:1">
           <div style="font-weight:500;font-size:13px">${escHtml(m.name)}</div>
           <div style="font-size:11px;color:#9ca3af">${escHtml(m.code||'')} · ${escHtml(m.spec||'-')}</div>
         </div>
-        <span class="badge badge-danger">단종</span>
+        <span class="badge badge-gray">비활성화</span>
       </div>`).join('');
   }
 
@@ -1897,7 +1897,7 @@ function openGradePreview(setId) {
       // slot_id로 직접 조회 (slot 객체 유무와 무관하게)
       const sm     = State.slotMaterials.find(sm => sm.slot_id === a.slot_id);
       const mat    = sm ? State.materials.find(m => m.id === sm.material_id) : null;
-      const isDisc = mat?.status === 'discontinued';
+      const isDisc = mat?.status === 'inactive' || mat?.status === 'discontinued';
 
       return `<tr>
         ${idx === 0
@@ -2722,7 +2722,7 @@ function _renderSmqTable(list) {
   empty.style.display = 'none';
 
   tbody.innerHTML = list.map(m => {
-    const isDisc     = m.status === 'discontinued';
+    const isDisc     = m.status === 'inactive' || m.status === 'discontinued';
     const isSelected = m.id === selectedId;
 
     // 색상 파싱
@@ -2764,7 +2764,7 @@ function _renderSmqTable(list) {
       <td style="color:#6b7280">${escHtml(m.supplier||'-')}</td>
       <td style="color:#6b7280">${escHtml(m.brand||'-')}</td>
       <td>${isDisc
-        ? '<span class="badge badge-danger" style="font-size:10px">단종</span>'
+        ? '<span class="badge badge-gray" style="font-size:10px">비활성화</span>'
         : '<span class="badge badge-success" style="font-size:10px">정상</span>'}</td>
       <td style="padding:0 6px;text-align:center">
         <button class="smq-info-btn" title="세부 정보 보기"
@@ -3328,9 +3328,9 @@ function renderSlotTable() {
            <i class="fas fa-link"></i> 연결 추가
          </button>`
       : mat
-        ? `<span class="slot-mat-chip${mat.status==='discontinued'?' slot-mat-chip--disc':''}"
+        ? `<span class="slot-mat-chip${(mat.status==='inactive'||mat.status==='discontinued')?' slot-mat-chip--disc':''}"
                onclick="openMatDetail('${escHtml(mat.id)}')" title="자재 상세 보기" style="cursor:pointer">
-             ${mat.status==='discontinued' ? '<span class="slot-mat-disc-icon">&#x26D4;</span>' : ''}
+             ${(mat.status==='inactive'||mat.status==='discontinued') ? '<span class="slot-mat-disc-icon">&#x26D4;</span>' : ''}
              <span class="slot-mat-chip-name">${escHtml(mat.name)}</span>
              ${mat.supplier ? `<span class="slot-mat-chip-sup">${escHtml(mat.supplier)}</span>` : ''}
              <button class="slot-mat-chip-del" onclick="event.stopPropagation();unlinkSlotMat('${escHtml(sm.id)}')" title="연결 해제">×</button>
@@ -3437,7 +3437,8 @@ function openMatDetail(matId) {
   // 상태 배지
   const statusMap = {
     active:       '<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">운영중</span>',
-    discontinued: '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">단종</span>',
+    inactive:      '<span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">비활성화</span>',
+    discontinued:  '<span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">비활성화</span>',
     pending:      '<span style="background:#fef9c3;color:#ca8a04;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">검토중</span>',
   };
 
@@ -3630,7 +3631,14 @@ function renderMaterialTable() {
     );
   }
   if (matFilterCategory) data = data.filter(m => m.category === matFilterCategory);
-  if (matFilterStatus) data = data.filter(m => m.status === matFilterStatus);
+  if (matFilterStatus) {
+    // 'inactive' 필터는 구버전 'discontinued' 값도 함께 포함
+    data = data.filter(m =>
+      matFilterStatus === 'inactive'
+        ? (m.status === 'inactive' || m.status === 'discontinued')
+        : m.status === matFilterStatus
+    );
+  }
 
   const tbody = document.getElementById('materials-tbody');
   if (data.length === 0) {
@@ -3661,7 +3669,7 @@ function renderMaterialTable() {
   });
 
   tbody.innerHTML = data.map(m => {
-    const rowStyle = m.status === 'discontinued' ? 'background:#fff5f5;' : '';
+    const rowStyle = (m.status === 'inactive' || m.status === 'discontinued') ? 'background:#f9fafb;' : '';
     const imgThumb = m.image_url
       ? `<img src="${escHtml(m.image_url)}" class="mat-thumb" onclick="openImagePreview('${escHtml(m.image_url)}')" title="이미지 보기">`
       : `<div class="mat-thumb-empty"><i class="fas fa-image"></i></div>`;
@@ -3670,7 +3678,7 @@ function renderMaterialTable() {
       <td>${imgThumb}</td>
       <td><span class="font-mono">${escHtml(m.code||m.id)}</span></td>
       <td style="font-weight:500">
-        ${m.status==='discontinued' ? '<i class="fas fa-exclamation-circle" style="color:#e02424;margin-right:4px;font-size:11px"></i>' : ''}
+        ${(m.status==='inactive'||m.status==='discontinued') ? '<i class="fas fa-exclamation-circle" style="color:#9ca3af;margin-right:4px;font-size:11px"></i>' : ''}
         ${escHtml(m.name)}
       </td>
       <td style="font-size:12px;color:#6b7280">${escHtml(m.brand||'-')}</td>
@@ -4025,9 +4033,9 @@ async function renderSlotMaterials() {
   const container = document.getElementById('slot-materials-container');
   if (!container) return;
 
-  // ── ① 단종 자재 연결 목록 ──
+  // ── ① 비활성화 자재 연결 목록 ──
   const discItems = State.slotMaterials
-    .filter(sm => State.materials.find(m => m.id === sm.material_id)?.status === 'discontinued')
+    .filter(sm => { const s = State.materials.find(m => m.id === sm.material_id)?.status; return s === 'inactive' || s === 'discontinued'; })
     .map(sm => ({
       sm,
       slot:    State.slots.find(s => s.id === sm.slot_id),
@@ -4043,7 +4051,7 @@ async function renderSlotMaterials() {
     }));
 
   // ────────────────────────────────
-  // 표 ① : 단종 자재 연결
+  // 표 ① : 비활성화 자재 연결
   // ────────────────────────────────
   let discRows;
   if (discItems.length > 0) {
@@ -4076,7 +4084,7 @@ async function renderSlotMaterials() {
     discRows = `
       <tr>
         <td colspan="4">
-          <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>단종 자재가 연결된 스펙이 없습니다</div>
+          <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>비활성화 자재가 연결된 스펙이 없습니다</div>
         </td>
       </tr>`;
   }
@@ -4114,7 +4122,7 @@ async function renderSlotMaterials() {
       <div class="sml-block-header">
         <span class="sml-block-icon sml-block-icon--disc"><i class="fas fa-ban"></i></span>
         <div>
-          <div class="sml-block-title">단종 자재 연결됨</div>
+          <div class="sml-block-title">비활성화된 자재 연결됨</div>
           <div class="sml-block-desc">연결된 자재를 변경해 주세요</div>
         </div>
         <span class="sml-block-badge sml-block-badge--disc">${discItems.length}건</span>
@@ -4128,7 +4136,7 @@ async function renderSlotMaterials() {
             <col style="width:110px">
           </colgroup>
           <thead>
-            <tr><th>유형</th><th>스펙</th><th>연결된 단종 자재</th><th>관리</th></tr>
+            <tr><th>유형</th><th>스펙</th><th>연결된 비활성화 자재</th><th>관리</th></tr>
           </thead>
           <tbody>${discRows}</tbody>
         </table>
@@ -4170,7 +4178,7 @@ function openSlotMaterialModal(data = null) {
 
   const matSel = document.getElementById('sm-material');
   matSel.innerHTML = State.materials.map(m =>
-    `<option value="${escHtml(m.id)}" ${data?.material_id===m.id?'selected':''}>${escHtml(m.name)} [${escHtml(m.code||m.id)}]${m.status==='discontinued'?' ⛔':''}</option>`
+    `<option value="${escHtml(m.id)}" ${data?.material_id===m.id?'selected':''}>${escHtml(m.name)} [${escHtml(m.code||m.id)}]${(m.status==='inactive'||m.status==='discontinued')?' ⛔':''}</option>`
   ).join('');
 
   document.getElementById('sm-note').value = data ? (data.note||'') : '';
@@ -4369,10 +4377,14 @@ function _populateDynamicSelects() {
     fillSelect('lineup-brand-filter', byGroup('lineup_brand'), { allLabel: '전체 브랜드' });
   }
 
-  // 상태 selects
-  fillSelect('lineup-status', byGroup('lineup_status'));
-  fillSelect('grade-status',  byGroup('set_status'));
-  fillSelect('mat-status',    byGroup('material_status'));
+  // 상태 selects — DB enum 미사용, 시스템 고정값 직접 주입
+  const STATUS_OPTS = [
+    { value: 'active',   label: '활성화' },
+    { value: 'inactive', label: '비활성화' },
+  ];
+  ['lineup-status', 'grade-status', 'mat-status'].forEach(id => {
+    fillSelect(id, STATUS_OPTS);
+  });
 }
 
 // ===================================================
