@@ -815,64 +815,7 @@
         <input type="text" class="form-control" id="mat-note" placeholder="비고">
       </div>
 
-      <!-- 색상 다중 입력 -->
-      <div class="form-group">
-        <label class="form-label">색상 <span style="font-size:11px;color:#9ca3af;font-weight:400">색상코드 / 색상명 (여러 개 가능)</span></label>
-        <div class="mat-color-list" id="mat-color-list"></div>
-        <button type="button" class="mat-color-add-btn" onclick="addMatColorRow()">
-          <i class="fas fa-plus"></i> 색상 추가
-        </button>
-      </div>
-
-      <!-- 성적서 첨부 -->
-      <div class="form-group">
-        <label class="form-label">성적서
-          <span style="font-size:11px;color:#9ca3af;font-weight:400">PDF, 이미지, 문서 등</span>
-        </label>
-        <div class="mat-file-drop-area" id="mat-report-drop"
-             ondragover="event.preventDefault();this.classList.add('drag-over')"
-             ondragleave="this.classList.remove('drag-over')"
-             ondrop="handleMatFileDrop(event,'report')"
-             onclick="document.getElementById('mat-report-file').click()">
-          <i class="fas fa-file-alt mat-file-icon"></i>
-          <div class="mat-file-label">
-            <div class="mat-file-name" id="mat-report-name" style="display:none"></div>
-            <div class="mat-file-hint" id="mat-report-hint">클릭하거나 파일을 드래그해서 첨부</div>
-          </div>
-          <button type="button" class="mat-file-clear-btn" id="mat-report-clear" style="display:none"
-                  onclick="event.stopPropagation();clearMatFile('report')">
-            <i class="fas fa-times"></i>
-          </button>
-          <input type="file" id="mat-report-file"
-                 accept=".pdf,.doc,.docx,.xls,.xlsx,.hwp,.ppt,.pptx,image/*"
-                 style="display:none" onchange="handleMatFileInput(this,'report')">
-        </div>
-      </div>
-
-      <!-- 시방서 첨부 -->
-      <div class="form-group">
-        <label class="form-label">시방서
-          <span style="font-size:11px;color:#9ca3af;font-weight:400">PDF, 이미지, 문서 등</span>
-        </label>
-        <div class="mat-file-drop-area" id="mat-specDoc-drop"
-             ondragover="event.preventDefault();this.classList.add('drag-over')"
-             ondragleave="this.classList.remove('drag-over')"
-             ondrop="handleMatFileDrop(event,'specDoc')"
-             onclick="document.getElementById('mat-specDoc-file').click()">
-          <i class="fas fa-file-contract mat-file-icon"></i>
-          <div class="mat-file-label">
-            <div class="mat-file-name" id="mat-specDoc-name" style="display:none"></div>
-            <div class="mat-file-hint" id="mat-specDoc-hint">클릭하거나 파일을 드래그해서 첨부</div>
-          </div>
-          <button type="button" class="mat-file-clear-btn" id="mat-specDoc-clear" style="display:none"
-                  onclick="event.stopPropagation();clearMatFile('specDoc')">
-            <i class="fas fa-times"></i>
-          </button>
-          <input type="file" id="mat-specDoc-file"
-                 accept=".pdf,.doc,.docx,.xls,.xlsx,.hwp,.ppt,.pptx,image/*"
-                 style="display:none" onchange="handleMatFileInput(this,'specDoc')">
-        </div>
-      </div>
+      <!-- 색상·성적서·시방서: DB 컬럼 미지원으로 비활성화 -->
 
     </div>
     <div class="modal-footer">
