@@ -248,8 +248,25 @@ function serializeSlotDesc(desc, attrs) {
 
 /** State.enums에서 특정 slot_type의 속성 정의 목록 반환
  *  group_key = "slot_attr_def:{slotType}"
- *  → [{ id, value(key), label(표시명), color(단위), sort_order }]
+ *  → [{ id, value(key), label(표시명), color("단위\t기준예시"), sort_order }]
+ *
+ * color 필드 직렬화: "단위" or "단위\t기준예시"
+ * _parseAttrUnit(color) → { unit, hint }
  */
+function _parseAttrUnit(colorStr) {
+  if (!colorStr) return { unit: '', hint: '' };
+  const idx = colorStr.indexOf('\t');
+  if (idx === -1) return { unit: colorStr, hint: '' };
+  return { unit: colorStr.slice(0, idx), hint: colorStr.slice(idx + 1) };
+}
+function _serializeAttrUnit(unit, hint) {
+  const u = (unit || '').trim();
+  const h = (hint || '').trim();
+  if (!u && !h) return '';
+  if (!h) return u;
+  return `${u}\t${h}`;
+}
+
 function getAttrDefs(slotType) {
   if (!slotType) return [];
   return (State.enums || [])
@@ -2215,8 +2232,9 @@ function renderSlotPool(stId) {
     const attrChips  = attrDefs
       .filter(def => attrs[def.value])
       .map(def => {
-        const unit = def.color ? ` ${def.color}` : '';
-        return `<span class="slot-pool-attr-chip" title="${escHtml(def.label||def.value)}">${escHtml(def.label||def.value)}: <strong>${escHtml(attrs[def.value])}${escHtml(unit)}</strong></span>`;
+        const { unit: _u } = _parseAttrUnit(def.color);
+        const unitSuffix = _u ? ` ${_u}` : '';
+        return `<span class="slot-pool-attr-chip" title="${escHtml(def.label||def.value)}">${escHtml(def.label||def.value)}: <strong>${escHtml(attrs[def.value])}${escHtml(unitSuffix)}</strong></span>`;
       }).join('');
 
     return `
@@ -3432,8 +3450,9 @@ function _renderSlotAttrFields(slotType, currentAttrs = {}) {
   container.innerHTML = defs.map(def => {
     const key = def.value;   // 속성 key
     const label = def.label || def.value;
-    const unit = def.color || '';  // color 필드 = 단위
+    const { unit, hint } = _parseAttrUnit(def.color);
     const val = currentAttrs[key] || '';
+    const ph = hint || (unit ? `예: ${unit}` : `${label} 값 입력`);
     return `
       <div class="form-group" style="margin-bottom:10px">
         <label class="form-label" style="font-size:12px">
@@ -3442,7 +3461,7 @@ function _renderSlotAttrFields(slotType, currentAttrs = {}) {
         </label>
         <input type="text" class="form-control" data-attr-key="${escHtml(key)}"
                value="${escHtml(val)}"
-               placeholder="${unit ? escHtml(unit) : escHtml(label) + ' 값 입력'}">
+               placeholder="${escHtml(ph)}">
       </div>`;
   }).join('');
 }
@@ -4494,7 +4513,7 @@ function _renderTypeDetail(typeValue) {
                  <div class="tm-attr-body">
                    <div class="tm-attr-name">${escHtml(def.label || def.value)}</div>
                    <div class="tm-attr-sub">
-                     ${def.color ? `<span class="tm-attr-unit"><i class="fas fa-ruler"></i> ${escHtml(def.color)}</span>` : ''}
+                     ${(()=>{ const {unit,hint}=_parseAttrUnit(def.color); return (unit?`<span class="tm-attr-unit"><i class="fas fa-ruler"></i> ${escHtml(unit)}</span>`:'')+(hint?`<span class="tm-attr-key" style="font-style:italic"><i class="fas fa-comment-dots"></i> ${escHtml(hint)}</span>`:''); })()}
                      ${def.value && def.value !== (def.label||'') ? `<span class="tm-attr-key"><i class="fas fa-key"></i> ${escHtml(def.value)}</span>` : ''}
                    </div>
                  </div>
@@ -4559,7 +4578,7 @@ function _renderEnumItem(e, editable, attrDefs = []) {
           : attrDefs.map(def => `
               <div class="enum-attr-def-row" data-attr-id="${escHtml(def.id)}">
                 <span class="enum-attr-def-name">${escHtml(def.label || def.value)}</span>
-                ${def.color ? `<span class="enum-attr-def-unit">${escHtml(def.color)}</span>` : ''}
+                ${(()=>{ const {unit,hint}=_parseAttrUnit(def.color); return (unit?`<span class="enum-attr-def-unit">${escHtml(unit)}</span>`:'')+( hint?`<span class="enum-attr-def-unit" style="color:#9ca3af;font-style:italic">${escHtml(hint)}</span>`:''); })()}
                 ${def.value && def.value !== (def.label||'') ? `<span class="enum-attr-def-key">${escHtml(def.value)}</span>` : ''}
                 <span style="flex:1"></span>
                 <button class="enum-action-btn" onclick="openAttrDefEditModal('${escHtml(def.id)}')" title="수정"><i class="fas fa-pen"></i></button>
@@ -4846,10 +4865,16 @@ function _openAttrDefModal(data, isEdit) {
             <div style="font-size:11px;color:#9ca3af;margin-top:4px">스펙 입력 폼에서 보여질 항목 이름입니다</div>
           </div>
           <div class="form-group">
-            <label class="form-label">단위 / 기준 예시
-              <span style="font-size:11px;color:#9ca3af;margin-left:4px">— 입력 힌트로 표시됩니다</span>
+            <label class="form-label">단위
+              <span style="font-size:11px;color:#9ca3af;margin-left:4px">— 속성 라벨 옆에 표시됩니다</span>
             </label>
-            <input type="text" class="form-control" id="attr-def-unit" placeholder="예: W/m²K, 만원, mm, %">
+            <input type="text" class="form-control" id="attr-def-unit" placeholder="예: W/m²K, mm, %, 만원">
+          </div>
+          <div class="form-group">
+            <label class="form-label">기준 예시
+              <span style="font-size:11px;color:#9ca3af;margin-left:4px">— 입력 필드의 placeholder로 표시됩니다</span>
+            </label>
+            <input type="text" class="form-control" id="attr-def-hint" placeholder="예: 0.5 ~ 2.0, 불연/준불연/난연, 고성능">
           </div>
           <div class="form-group">
             <label class="form-label">속성 키(Key)
@@ -4876,7 +4901,9 @@ function _openAttrDefModal(data, isEdit) {
   document.getElementById('attr-def-record-id').value = isEdit ? (data.id || '') : '';
   document.getElementById('attr-def-slot-type').value  = data.slotType || '';
   document.getElementById('attr-def-label').value      = isEdit ? (data.label || data.value || '') : '';
-  document.getElementById('attr-def-unit').value       = isEdit ? (data.color || '') : '';   // color 필드를 단위로 재활용
+  const _parsedUnit = _parseAttrUnit(isEdit ? (data.color || '') : '');
+  document.getElementById('attr-def-unit').value       = _parsedUnit.unit;
+  document.getElementById('attr-def-hint').value       = _parsedUnit.hint;
   document.getElementById('attr-def-value').value      = isEdit ? (data.value || '') : '';
   document.getElementById('attr-def-sort').value       = isEdit && data.sort_order != null ? data.sort_order : '';
   openModal('attr-def-modal');
@@ -4887,6 +4914,7 @@ async function saveAttrDef() {
   const slotType  = document.getElementById('attr-def-slot-type').value.trim();
   const labelVal  = document.getElementById('attr-def-label').value.trim();
   const unit      = document.getElementById('attr-def-unit').value.trim();
+  const hint      = document.getElementById('attr-def-hint').value.trim();
   const valueVal  = document.getElementById('attr-def-value').value.trim() || labelVal;
   const sort_order= parseInt(document.getElementById('attr-def-sort').value) || 99;
 
@@ -4895,8 +4923,8 @@ async function saveAttrDef() {
 
   const group_key   = `slot_attr_def:${slotType}`;
   const group_label = `속성정의:${slotType}`;
-  // color 필드 = 단위, label = 표시명, value = 속성 key
-  const payload = { group_key, group_label, label: labelVal, value: valueVal, color: unit, sort_order, is_system: false };
+  // color 필드 = "단위\t기준예시" 직렬화, label = 표시명, value = 속성 key
+  const payload = { group_key, group_label, label: labelVal, value: valueVal, color: _serializeAttrUnit(unit, hint), sort_order, is_system: false };
 
   try {
     if (id) {
