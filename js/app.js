@@ -284,7 +284,7 @@ function getAttrDefs(slotType) {
  *     getId         : 행 → 데이터 id 추출 함수 (el => el.dataset.id)
  *     onReorder     : async (orderedIds) => void  — 새 순서의 id 배열 전달, 저장 처리
  */
-function makeSortable(container, { itemSelector, handleSelector, getId, onReorder, skipDragData = false }) {
+function makeSortable(container, { itemSelector, handleSelector, getId, onReorder, skipDragData = false, horizontal = false }) {
   let dragSrc = null;    // 드래그 중인 행 엘리먼트
 
   function getItems() {
@@ -314,11 +314,16 @@ function makeSortable(container, { itemSelector, handleSelector, getId, onReorde
     e.dataTransfer.dropEffect = 'move';
     if (!dragSrc || this === dragSrc) return;
 
-    // 행의 상단 50% / 하단 50% 기준으로 삽입 위치 결정
     const rect = this.getBoundingClientRect();
-    const mid  = rect.top + rect.height / 2;
     this.classList.remove('sortable-drag-over-top', 'sortable-drag-over-bottom');
-    this.classList.add(e.clientY < mid ? 'sortable-drag-over-top' : 'sortable-drag-over-bottom');
+    if (horizontal) {
+      // 가로 레이아웃: 좌 50% → before(top 클래스), 우 50% → after(bottom 클래스)
+      const mid = rect.left + rect.width / 2;
+      this.classList.add(e.clientX < mid ? 'sortable-drag-over-top' : 'sortable-drag-over-bottom');
+    } else {
+      const mid = rect.top + rect.height / 2;
+      this.classList.add(e.clientY < mid ? 'sortable-drag-over-top' : 'sortable-drag-over-bottom');
+    }
   }
 
   function onDragLeave() {
@@ -334,7 +339,9 @@ function makeSortable(container, { itemSelector, handleSelector, getId, onReorde
     if (skipDragData && !e.dataTransfer.getData('slot-pool-sort')) return;
 
     const rect  = this.getBoundingClientRect();
-    const after = e.clientY >= rect.top + rect.height / 2;
+    const after = horizontal
+      ? e.clientX >= rect.left + rect.width / 2
+      : e.clientY >= rect.top + rect.height / 2;
 
     // DOM 이동
     if (after) {
@@ -1606,6 +1613,7 @@ function renderPackageGroups() {
         itemSelector: '.stg-card[data-id]',
         handleSelector: '.drag-handle',
         getId: el => el.dataset.id,
+        horizontal: true,
         onReorder: async (orderedIds) => {
           await Promise.all(orderedIds.map((id, i) => {
             const item = State.packages.find(st => st.id === id);

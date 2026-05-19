@@ -3759,8 +3759,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   opacity: 0.45;
   box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
-.stg-card.sortable-drag-over-top    { border-top: 2px solid var(--primary); }
-.stg-card.sortable-drag-over-bottom { border-bottom: 2px solid var(--primary); }
+.stg-card.sortable-drag-over-top    { border-left: 2px solid var(--primary); }
+.stg-card.sortable-drag-over-bottom { border-right: 2px solid var(--primary); }
 
 /* 빈 분류 힌트 (카드 없을 때) */
 .stg-card-grid .stg-empty-hint {
