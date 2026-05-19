@@ -525,7 +525,7 @@ function navigate(page) {
     'slot-materials': '스펙-자재 연결',
     variants: '변형(Variant) 관리',
     changelogs: '변경 이력',
-    enums: '선택지 관리'
+    enums: '유형 관리'
   };
   document.getElementById('header-title').textContent = titles[page] || page;
 
@@ -3424,7 +3424,7 @@ function _renderSlotAttrFields(slotType, currentAttrs = {}) {
   const defs = getAttrDefs(slotType);
   if (defs.length === 0) {
     container.innerHTML = `<div style="font-size:12px;color:#9ca3af;padding:4px 0">
-      이 유형에 정의된 속성이 없습니다. <span class="link-btn" onclick="navigate('enums')">선택지 관리</span>에서 추가할 수 있습니다.
+      이 유형에 정의된 속성이 없습니다. <span class="link-btn" onclick="navigate('enums')">유형 관리</span>에서 추가할 수 있습니다.
     </div>`;
     return;
   }
@@ -4304,62 +4304,237 @@ const ENUM_GROUP_META = {
   material_status: { label: '자재 상태',        icon: 'fa-database',     editable: false, desc: '시스템 고정값 — 변경 불가' },
 };
 
+// 현재 선택된 유형 value (좌측 패널 선택 상태)
+let _selectedTypeValue = null;
+
 function renderEnumsPage() {
   const container = document.getElementById('enums-container');
   if (!container) return;
 
-  // group_key별 그룹핑
-  const groups = {};
-  Object.keys(ENUM_GROUP_META).forEach(k => { groups[k] = []; });
-  State.enums.forEach(e => {
-    if (groups[e.group_key]) groups[e.group_key].push(e);
-  });
+  const types = (State.enums || [])
+    .filter(e => e.group_key === 'material_type')
+    .sort((a, b) => (a.sort_order || 99) - (b.sort_order || 99));
+
+  // 선택값 초기화: 없으면 첫 번째 유형
+  if (!_selectedTypeValue && types.length > 0) {
+    _selectedTypeValue = types[0].value;
+  }
 
   container.innerHTML = `
-    <div class="enum-page-wrap">
-      ${Object.entries(ENUM_GROUP_META).filter(([, meta]) => meta.editable).map(([key, meta]) => {
-        const items = (groups[key] || []).sort((a,b) => (a.sort_order||99)-(b.sort_order||99));
-        return `
-          <div class="enum-group-card" data-group="${escHtml(key)}">
-            <div class="enum-group-header">
-              <div class="enum-group-title-wrap">
-                <span class="enum-group-icon"><i class="fas ${meta.icon}"></i></span>
-                <div>
-                  <div class="enum-group-title">${escHtml(meta.label)}</div>
-                  <div class="enum-group-desc">${escHtml(meta.desc)}</div>
-                </div>
-              </div>
-              ${meta.editable ? `
-                <button class="btn btn-xs btn-primary" onclick="openEnumAddModal('${escHtml(key)}','${escHtml(meta.label)}')">
-                  <i class="fas fa-plus"></i> 추가
-                </button>` : ''}
-            </div>
-            <div class="enum-items-list" data-group="${escHtml(key)}" data-editable="${meta.editable}">
-              ${items.length === 0
-                ? `<div class="enum-empty">등록된 선택지가 없습니다</div>`
-                : items.map(e => {
-                    const attrDefs = key === 'material_type' ? getAttrDefs(e.value) : [];
-                    return _renderEnumItem(e, meta.editable, attrDefs);
-                  }).join('')}
-            </div>
-          </div>`;
-      }).join('')}
+    <div class="tm-layout">
+
+      <!-- 좌측: 유형 목록 패널 -->
+      <div class="tm-sidebar">
+        <div class="tm-sidebar-header">
+          <span class="tm-sidebar-title">유형 목록</span>
+          <span class="badge badge-gray">${types.length}</span>
+        </div>
+        <div class="tm-type-list" id="tm-type-list">
+          ${types.length === 0
+            ? `<div class="tm-type-empty">유형이 없습니다.<br><span style="font-size:11px">상단 <strong>유형 추가</strong> 버튼으로 추가하세요.</span></div>`
+            : types.map(e => {
+                const attrCount = getAttrDefs(e.value).length;
+                const isActive = e.value === _selectedTypeValue;
+                const dot = e.color && e.color !== '#6b7280'
+                  ? `<span class="tm-type-dot" style="background:${escHtml(e.color)}"></span>`
+                  : `<span class="tm-type-dot" style="background:#e5e7eb"></span>`;
+                return `
+                  <div class="tm-type-item ${isActive ? 'tm-type-item--active' : ''}"
+                       data-id="${escHtml(e.id)}"
+                       data-value="${escHtml(e.value)}"
+                       onclick="_selectType('${escHtml(e.value)}')">
+                    <span class="tm-type-drag" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>
+                    ${dot}
+                    <span class="tm-type-name">${escHtml(e.label || e.value)}</span>
+                    <span class="tm-type-attr-count" title="속성 ${attrCount}개">${attrCount}</span>
+                    <div class="tm-type-actions">
+                      <button class="tm-icon-btn" onclick="event.stopPropagation();openEnumEditModal('${escHtml(e.id)}')" title="수정"><i class="fas fa-pen"></i></button>
+                      <button class="tm-icon-btn tm-icon-btn--del" onclick="event.stopPropagation();deleteEnum('${escHtml(e.id)}','${escHtml(e.label||e.value)}')" title="삭제"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>`;
+              }).join('')}
+        </div>
+
+        <!-- 시스템 고정값 접기/펼치기 -->
+        <div class="tm-sys-section">
+          <button class="tm-sys-toggle" onclick="_toggleSysSection(this)">
+            <i class="fas fa-lock" style="font-size:10px;margin-right:5px"></i>
+            시스템 고정값
+            <i class="fas fa-chevron-down" style="margin-left:auto;font-size:10px"></i>
+          </button>
+          <div class="tm-sys-body" style="display:none">
+            ${Object.entries(ENUM_GROUP_META).filter(([,m]) => !m.editable).map(([key, meta]) => {
+              const items = (State.enums || []).filter(e => e.group_key === key).sort((a,b)=>(a.sort_order||99)-(b.sort_order||99));
+              return `
+                <div class="tm-sys-group">
+                  <div class="tm-sys-group-label"><i class="fas ${meta.icon}"></i> ${escHtml(meta.label)}</div>
+                  ${items.map(e => `
+                    <div class="tm-sys-item">
+                      <span class="tm-sys-dot" style="background:${escHtml(e.color||'#e5e7eb')}"></span>
+                      <span>${escHtml(e.label||e.value)}</span>
+                    </div>`).join('')}
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- 우측: 속성 상세 패널 -->
+      <div class="tm-detail" id="tm-detail">
+        ${_renderTypeDetail(_selectedTypeValue)}
+      </div>
+
     </div>`;
 
-  // DnD 활성화 — editable 그룹에만
-  container.querySelectorAll('.enum-items-list[data-editable="true"]').forEach(listEl => {
-    _setupEnumListDnD(listEl);
+  // 유형 목록 DnD 정렬
+  if (types.length >= 2) {
+    const list = container.querySelector('#tm-type-list');
+    makeSortable(list, {
+      itemSelector: '.tm-type-item[data-id]',
+      handleSelector: '.tm-type-drag',
+      getId: el => el.dataset.id,
+      onReorder: async (orderedIds) => {
+        await Promise.all(orderedIds.map((id, i) => {
+          const e = State.enums.find(x => x.id === id);
+          if (!e) return Promise.resolve();
+          return API.put('enums', id, { ...e, sort_order: i + 1 });
+        }));
+        await loadAll();
+        _populateDynamicSelects();
+        renderEnumsPage();
+      }
+    });
+  }
+}
+
+function _toggleSysSection(btn) {
+  const body = btn.nextElementSibling;
+  const icon = btn.querySelector('.fa-chevron-down, .fa-chevron-up');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.className = open ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+}
+
+function _selectType(typeValue) {
+  _selectedTypeValue = typeValue;
+
+  // 좌측 active 클래스 토글
+  document.querySelectorAll('.tm-type-item').forEach(el => {
+    el.classList.toggle('tm-type-item--active', el.dataset.value === typeValue);
   });
 
-  // 속성 정의 섹션 토글 초기화
-  container.querySelectorAll('.enum-attr-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const section = btn.closest('.enum-item-row').querySelector('.enum-attr-section');
-      if (!section) return;
-      const open = section.style.display !== 'none';
-      section.style.display = open ? 'none' : 'block';
-      btn.querySelector('i').className = open ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-    });
+  // 우측 패널만 교체
+  const detail = document.getElementById('tm-detail');
+  if (detail) detail.innerHTML = _renderTypeDetail(typeValue);
+
+  // 속성 목록 DnD 재설정
+  _setupAttrListDnD(typeValue);
+}
+
+/** 우측 상세 패널 HTML 생성 */
+function _renderTypeDetail(typeValue) {
+  if (!typeValue) {
+    return `<div class="tm-detail-empty"><i class="fas fa-arrow-left"></i><br>왼쪽에서 유형을 선택하세요</div>`;
+  }
+
+  const typeEnum = State.enums.find(e => e.group_key === 'material_type' && e.value === typeValue);
+  if (!typeEnum) {
+    return `<div class="tm-detail-empty">유형을 찾을 수 없습니다</div>`;
+  }
+
+  const attrDefs = getAttrDefs(typeValue);
+  const color    = typeEnum.color && typeEnum.color !== '#6b7280' ? typeEnum.color : '#6b7280';
+  const slotCount    = State.slots.filter(s => s.slot_type === typeValue).length;
+  const materialCount= State.materials.filter(m => m.category === typeValue).length;
+
+  return `
+    <!-- 상세 헤더 -->
+    <div class="tm-detail-header">
+      <div class="tm-detail-header-left">
+        <span class="tm-detail-color-bar" style="background:${escHtml(color)}"></span>
+        <div>
+          <div class="tm-detail-title">${escHtml(typeEnum.label || typeEnum.value)}</div>
+          <div class="tm-detail-meta">
+            <span><i class="fas fa-puzzle-piece"></i> 스펙 ${slotCount}개</span>
+            <span><i class="fas fa-box"></i> 자재 ${materialCount}개</span>
+          </div>
+        </div>
+      </div>
+      <div class="tm-detail-header-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEnumEditModal('${escHtml(typeEnum.id)}')">
+          <i class="fas fa-pen"></i> 유형 수정
+        </button>
+      </div>
+    </div>
+
+    <!-- 속성 정의 섹션 -->
+    <div class="tm-attr-section">
+      <div class="tm-attr-section-header">
+        <div class="tm-attr-section-title">
+          <i class="fas fa-sliders-h"></i> 속성 항목
+          <span class="tm-attr-count-badge">${attrDefs.length}</span>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="openAttrDefAddModal('${escHtml(typeValue)}','${escHtml(typeEnum.label||typeEnum.value)}')">
+          <i class="fas fa-plus"></i> 속성 추가
+        </button>
+      </div>
+      <p class="tm-attr-desc">이 유형의 스펙을 추가할 때 입력해야 할 항목들을 정의합니다.<br>예) 단열재 → 열관류율(W/m²K), 두께(mm)</p>
+
+      ${attrDefs.length === 0
+        ? `<div class="tm-attr-empty">
+             <i class="fas fa-inbox"></i>
+             <div>아직 속성 항목이 없습니다</div>
+             <div style="font-size:12px;color:#9ca3af;margin-top:4px">속성 추가 버튼으로 첫 번째 항목을 만들어보세요</div>
+           </div>`
+        : `<div class="tm-attr-list" id="tm-attr-list-${escHtml(typeValue)}">
+             ${attrDefs.map((def, idx) => `
+               <div class="tm-attr-row" data-id="${escHtml(def.id)}">
+                 <span class="tm-attr-drag" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>
+                 <div class="tm-attr-index">${idx + 1}</div>
+                 <div class="tm-attr-body">
+                   <div class="tm-attr-name">${escHtml(def.label || def.value)}</div>
+                   <div class="tm-attr-sub">
+                     ${def.color ? `<span class="tm-attr-unit"><i class="fas fa-ruler"></i> ${escHtml(def.color)}</span>` : ''}
+                     ${def.value && def.value !== (def.label||'') ? `<span class="tm-attr-key"><i class="fas fa-key"></i> ${escHtml(def.value)}</span>` : ''}
+                   </div>
+                 </div>
+                 <div class="tm-attr-actions">
+                   <button class="btn btn-sm btn-secondary" onclick="openAttrDefEditModal('${escHtml(def.id)}')">
+                     <i class="fas fa-pen"></i> 수정
+                   </button>
+                   <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="deleteAttrDef('${escHtml(def.id)}','${escHtml(def.label||def.value)}')">
+                     <i class="fas fa-trash"></i>
+                   </button>
+                 </div>
+               </div>`).join('')}
+           </div>`}
+    </div>`;
+}
+
+/** 속성 목록 DnD 설정 */
+function _setupAttrListDnD(typeValue) {
+  const listId = `tm-attr-list-${typeValue}`;
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const rows = list.querySelectorAll('.tm-attr-row[data-id]');
+  if (rows.length < 2) return;
+
+  makeSortable(list, {
+    itemSelector: '.tm-attr-row[data-id]',
+    handleSelector: '.tm-attr-drag',
+    getId: el => el.dataset.id,
+    onReorder: async (orderedIds) => {
+      await Promise.all(orderedIds.map((id, i) => {
+        const e = State.enums.find(x => x.id === id);
+        if (!e) return Promise.resolve();
+        return API.put('enums', id, { ...e, sort_order: i + 1 });
+      }));
+      await loadAll();
+      // 우측 패널만 재렌더 (선택 상태 유지)
+      const detail = document.getElementById('tm-detail');
+      if (detail) detail.innerHTML = _renderTypeDetail(typeValue);
+      _setupAttrListDnD(typeValue);
+    }
   });
 }
 
