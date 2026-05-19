@@ -851,11 +851,11 @@ let lineupFilterBrand = '';
 async function renderLineups() {
   await loadAll();
   renderBrandManageSection();
-  renderLineupBrandCards();
   renderLineupTable();
 }
 
-// ── 브랜드 관리 섹션 렌더 (플랫폼 관리 페이지 상단) ──
+// ── 브랜드 섹션 렌더 (플랫폼 관리 페이지 상단)
+// 브랜드별 카드 + 드래그 정렬 + 수정/삭제 버튼 통합
 function renderBrandManageSection() {
   const container = document.getElementById('brand-manage-section');
   if (!container) return;
@@ -864,46 +864,64 @@ function renderBrandManageSection() {
     .filter(e => e.group_key === 'lineup_brand')
     .sort((a, b) => (a.sort_order || 99) - (b.sort_order || 99));
 
-  const itemsHtml = brands.length === 0
-    ? `<div class="brand-manage-empty">등록된 브랜드가 없습니다. <strong>+ 브랜드 추가</strong> 버튼으로 추가하세요.</div>`
-    : brands.map(e => {
-        const color = e.color && e.color !== '#6b7280' ? e.color : null;
-        const dot = color
-          ? `<span style="width:10px;height:10px;border-radius:50%;background:${escHtml(color)};display:inline-block;flex-shrink:0"></span>`
-          : `<span style="width:10px;height:10px;border-radius:50%;background:#e5e7eb;display:inline-block;flex-shrink:0"></span>`;
-        const lineupCount = State.lineups.filter(l => l.brand === e.value).length;
+  const BRAND_ICONS = ['🏢', '🏠', '🏗️', '🏛️', '🏬', '🏭'];
+  const totalTypes = State.packages.length;
+
+  // 브랜드 카드 목록 HTML
+  const cardsHtml = brands.length === 0
+    ? `<div class="bm-empty">등록된 브랜드가 없습니다. <strong>+ 브랜드 추가</strong> 버튼으로 추가하세요.</div>`
+    : brands.map((e, idx) => {
+        const rawColor = e.color && e.color !== '#6b7280' ? e.color : null;
+        const color = rawColor || '#6b7280';
+        const icon  = BRAND_ICONS[idx % BRAND_ICONS.length];
+        const brandLineups = State.lineups.filter(l => l.brand === e.value);
+        const lineupHtml = brandLineups.length === 0
+          ? `<div class="bm-lineup-empty">등록된 플랫폼 없음</div>`
+          : brandLineups.map(l => {
+              const selCount = State.lineupSetSelections.filter(s => s.lineup_id === l.id).length;
+              return `<div class="bm-lineup-item" onclick="navigateToLineupDetail('${escHtml(l.id)}')">
+                <span class="status-dot ${escHtml(l.status||'active')}"></span>
+                <span class="bm-lineup-name">${escHtml(l.name)}</span>
+                <span class="bm-lineup-count">${selCount}/${totalTypes}</span>
+              </div>`;
+            }).join('');
+
         return `
-          <div class="brand-manage-item" data-id="${escHtml(e.id)}">
-            <span class="brand-manage-drag" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>
-            ${dot}
-            <span class="brand-manage-name">${escHtml(e.label || e.value)}</span>
-            <span class="brand-manage-count">${lineupCount}개</span>
-            <span style="flex:1"></span>
-            <button class="enum-action-btn" onclick="openBrandEditModal('${escHtml(e.id)}')" title="수정"><i class="fas fa-pen"></i></button>
-            <button class="enum-action-btn enum-action-btn--del" onclick="deleteBrand('${escHtml(e.id)}','${escHtml(e.label||e.value)}')" title="삭제"><i class="fas fa-trash"></i></button>
+          <div class="bm-card" data-id="${escHtml(e.id)}" style="border-left:4px solid ${escHtml(color)}">
+            <div class="bm-card-head" style="background:${escHtml(color)}12">
+              <span class="bm-drag" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>
+              <span class="bm-card-icon">${icon}</span>
+              <span class="bm-card-name" style="color:${escHtml(color)}">${escHtml(e.label || e.value)}</span>
+              <span class="bm-card-cnt">${brandLineups.length}개</span>
+              <div class="bm-card-actions">
+                <button class="tm-icon-btn" onclick="event.stopPropagation();openBrandEditModal('${escHtml(e.id)}')" title="수정"><i class="fas fa-pen"></i></button>
+                <button class="tm-icon-btn tm-icon-btn--del" onclick="event.stopPropagation();deleteBrand('${escHtml(e.id)}','${escHtml(e.label||e.value)}')" title="삭제"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="bm-lineup-list">${lineupHtml}</div>
           </div>`;
       }).join('');
 
   container.innerHTML = `
-    <div class="brand-manage-card">
-      <div class="brand-manage-header">
-        <div class="brand-manage-title">
-          <i class="fas fa-building"></i> 브랜드 관리
+    <div class="bm-section">
+      <div class="bm-section-header">
+        <div class="bm-section-title">
+          <i class="fas fa-building"></i> 브랜드
           <span class="badge badge-gray" style="margin-left:6px;font-size:10px">${brands.length}</span>
         </div>
-        <button class="btn btn-xs btn-primary" onclick="openBrandAddModal()">
+        <button class="btn btn-xs btn-secondary" onclick="openBrandAddModal()">
           <i class="fas fa-plus"></i> 브랜드 추가
         </button>
       </div>
-      <div class="brand-manage-list" id="brand-manage-list">${itemsHtml}</div>
+      <div class="bm-cards-row" id="bm-cards-row">${cardsHtml}</div>
     </div>`;
 
-  // DnD 정렬
+  // DnD 카드 순서 변경
   if (brands.length >= 2) {
-    const list = container.querySelector('#brand-manage-list');
-    makeSortable(list, {
-      itemSelector: '.brand-manage-item[data-id]',
-      handleSelector: '.brand-manage-drag',
+    const row = container.querySelector('#bm-cards-row');
+    makeSortable(row, {
+      itemSelector: '.bm-card[data-id]',
+      handleSelector: '.bm-drag',
       getId: el => el.dataset.id,
       onReorder: async (orderedIds) => {
         await Promise.all(orderedIds.map((id, i) => {
@@ -913,7 +931,6 @@ function renderBrandManageSection() {
         }));
         await loadAll();
         renderBrandManageSection();
-        renderLineupBrandCards();
         _populateDynamicSelects();
       }
     });
@@ -1000,7 +1017,6 @@ async function saveBrand() {
     closeModal('brand-modal');
     await loadAll();
     renderBrandManageSection();
-    renderLineupBrandCards();
     _populateDynamicSelects();
   } catch(err) {
     showToast('저장 실패: ' + err.message, 'error');
@@ -1018,7 +1034,6 @@ async function deleteBrand(enumId, label) {
         showToast('브랜드가 삭제되었습니다');
         await loadAll();
         renderBrandManageSection();
-        renderLineupBrandCards();
         _populateDynamicSelects();
       } catch(err) {
         showToast('삭제 실패: ' + err.message, 'error');
@@ -1042,7 +1057,7 @@ function renderLineupBrandCards() {
     : [...new Set(State.lineups.map(l => l.brand).filter(Boolean))];
 
   if (brands.length === 0) {
-    container.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">브랜드가 없습니다. 위 <strong>브랜드 관리</strong>에서 브랜드를 추가하면 카드가 표시됩니다.</div>';
+    container.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:8px 0">브랜드가 없습니다. 위 <strong>브랜드</strong> 섹션에서 브랜드를 추가하면 카드가 표시됩니다.</div>';
     return;
   }
 
@@ -1136,7 +1151,7 @@ function renderLineupTable() {
           return API.put('lineups', id, { ...item, sort_order: i + 1 });
         }));
         await loadAll();
-        renderLineupBrandCards();
+        renderBrandManageSection();
       }
     });
   }
