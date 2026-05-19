@@ -3678,22 +3678,27 @@ function openMaterialModal(data = null) {
 async function saveMaterial() {
   const recordId = document.getElementById('material-record-id').value;
 
-  // DB 실제 컬럼: id, code, name, brand, spec, unit, unit_price, category,
-  //               status, supplier, lead_time_days, note, image_url
-  // ※ colors / report_file / spec_doc_file 컬럼은 DB에 없으므로 전송하지 않음
+  // 색상 직렬화
+  const validColors = matColors.filter(c => c.code.trim() || c.name.trim());
+
   const payload = {
-    id:         document.getElementById('mat-code').value.trim(),
-    code:       document.getElementById('mat-code').value.trim(),
-    name:       document.getElementById('mat-name').value.trim(),
-    brand:      document.getElementById('mat-brand').value.trim(),
-    spec:       document.getElementById('mat-spec').value.trim(),
-    category:   document.getElementById('mat-category').value,
-    unit:       document.getElementById('mat-unit').value.trim(),
-    unit_price: parseFloat(document.getElementById('mat-price').value) || 0,
-    supplier:   document.getElementById('mat-supplier').value.trim(),
-    status:     document.getElementById('mat-status').value,
-    note:       document.getElementById('mat-note').value.trim(),
-    image_url:  matImageDataUrl || undefined,
+    id:                 document.getElementById('mat-code').value.trim(),
+    code:               document.getElementById('mat-code').value.trim(),
+    name:               document.getElementById('mat-name').value.trim(),
+    brand:              document.getElementById('mat-brand').value.trim(),
+    spec:               document.getElementById('mat-spec').value.trim(),
+    category:           document.getElementById('mat-category').value,
+    unit:               document.getElementById('mat-unit').value.trim(),
+    unit_price:         parseFloat(document.getElementById('mat-price').value) || 0,
+    supplier:           document.getElementById('mat-supplier').value.trim(),
+    status:             document.getElementById('mat-status').value,
+    note:               document.getElementById('mat-note').value.trim(),
+    image_url:          matImageDataUrl || undefined,
+    colors:             validColors.length > 0 ? JSON.stringify(validColors) : null,
+    report_file:        matReportFile || undefined,
+    report_file_name:   matReportFileName || undefined,
+    spec_doc_file:      matSpecDocFile || undefined,
+    spec_doc_file_name: matSpecDocFileName || undefined,
   };
 
   if (!payload.name) { showToast('자재명을 입력하세요', 'error'); return; }
