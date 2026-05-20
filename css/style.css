@@ -157,6 +157,8 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* 헤더 */
@@ -266,6 +268,8 @@ body {
 #content {
   flex: 1;
   padding: 24px;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* 페이지 - 기본 숨김 */
@@ -456,12 +460,15 @@ body {
   overflow-x: auto;
   border-radius: var(--border-radius);
   border: 1px solid var(--gray-200);
+  width: 100%;
+  min-width: 0;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
+  word-break: break-word;
 }
 
 thead th {
@@ -475,6 +482,8 @@ thead th {
   letter-spacing: 0.04em;
   border-bottom: 1px solid var(--gray-200);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 tbody td {
@@ -482,6 +491,8 @@ tbody td {
   border-bottom: 1px solid var(--gray-100);
   vertical-align: middle;
   font-size: 13.5px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 tbody tr:last-child td { border-bottom: none; }
@@ -2587,33 +2598,47 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 #page-materials .materials-table {
   table-layout: fixed;
   width: 100%;
+  min-width: 820px;
 }
-#page-materials .materials-table .mat-col-type { width: 72px; }
-#page-materials .materials-table .mat-col-img { width: 52px; }
-#page-materials .materials-table .mat-col-code { width: 96px; }
-#page-materials .materials-table .mat-col-name { width: auto; }
-#page-materials .materials-table .mat-col-brand { width: 80px; }
-#page-materials .materials-table .mat-col-spec { width: 120px; }
-#page-materials .materials-table .mat-col-unit { width: 48px; }
-#page-materials .materials-table .mat-col-price { width: 88px; }
-#page-materials .materials-table .mat-col-supplier { width: 96px; }
-#page-materials .materials-table .mat-col-status { width: 76px; }
-#page-materials .materials-table .mat-col-actions { width: 108px; }
+#page-materials .materials-table .mat-col-type     { width: 68px; }
+#page-materials .materials-table .mat-col-img      { width: 56px; }
+#page-materials .materials-table .mat-col-code     { width: 90px; }
+#page-materials .materials-table .mat-col-name     { width: auto; min-width: 120px; }
+#page-materials .materials-table .mat-col-brand    { width: 80px; }
+#page-materials .materials-table .mat-col-spec     { width: 110px; }
+#page-materials .materials-table .mat-col-unit     { width: 46px; }
+#page-materials .materials-table .mat-col-price    { width: 82px; }
+#page-materials .materials-table .mat-col-supplier { width: 90px; }
+#page-materials .materials-table .mat-col-status   { width: 72px; }
+#page-materials .materials-table .mat-col-actions  { width: 100px; }
 
-#page-materials .materials-table thead th,
+#page-materials .materials-table thead th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 10px 10px;
+}
 #page-materials .materials-table tbody td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 9px 10px;
 }
-#page-materials .materials-table .mat-col-name,
+#page-materials .materials-table .mat-col-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 #page-materials .materials-table .mat-col-spec {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 #page-materials .materials-table .mat-col-actions,
 #page-materials .materials-table .mat-col-status {
   overflow: visible;
   text-overflow: clip;
+  white-space: nowrap;
 }
 
 .mat-status-slot {
@@ -5637,4 +5662,240 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   font-size: 11px;
   color: var(--gray-400);
   padding: 6px 6px 4px;
+}
+
+/* ================================================================
+   UI 개선 — 테이블 가로 넘침 방지 · 열 너비 안정화 · 패딩 정비
+   ================================================================ */
+
+/* ── 전체 페이지 오버플로우 방지 ─────────────────────────────────── */
+.page {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── 플랫폼 목록 테이블 ──────────────────────────────────────────── */
+#page-lineups .table-wrapper {
+  overflow-x: auto;
+}
+#page-lineups table {
+  table-layout: fixed;
+  min-width: 580px;
+  width: 100%;
+}
+#page-lineups table col:nth-child(1) { width: 38px; }   /* 드래그 핸들 */
+#page-lineups table col:nth-child(2) { width: 90px; }   /* 브랜드 */
+#page-lineups table col:nth-child(3) { width: auto; min-width: 140px; }  /* 플랫폼명 */
+#page-lineups table col:nth-child(4) { width: 30%; }    /* 설명 */
+#page-lineups table col:nth-child(5) { width: 70px; }   /* 상태 */
+#page-lineups table col:nth-child(6) { width: 90px; }   /* 관리 */
+
+#page-lineups table thead th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 10px 12px;
+}
+#page-lineups table tbody td {
+  padding: 10px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 설명 열: 줄바꿈 허용 */
+#page-lineups table tbody td:nth-child(4) {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.45;
+}
+/* 관리/상태 열: 버튼이 잘리지 않도록 */
+#page-lineups table thead th:nth-child(5),
+#page-lineups table thead th:nth-child(6),
+#page-lineups table tbody td:nth-child(5),
+#page-lineups table tbody td:nth-child(6) {
+  overflow: visible;
+  white-space: nowrap;
+}
+
+/* ── 변경 이력 테이블 ────────────────────────────────────────────── */
+#page-changelogs .table-wrapper {
+  overflow-x: auto;
+}
+#page-changelogs table {
+  table-layout: fixed;
+  min-width: 780px;
+  width: 100%;
+}
+#page-changelogs table thead th:nth-child(1) { width: 130px; } /* 일시 */
+#page-changelogs table thead th:nth-child(2) { width: 80px; }  /* 대상 유형 */
+#page-changelogs table thead th:nth-child(3) { width: auto; min-width: 120px; } /* 대상명 */
+#page-changelogs table thead th:nth-child(4) { width: 70px; }  /* 변경 유형 */
+#page-changelogs table thead th:nth-child(5) { width: 14%; }   /* 변경 전 */
+#page-changelogs table thead th:nth-child(6) { width: 14%; }   /* 변경 후 */
+#page-changelogs table thead th:nth-child(7) { width: 80px; }  /* 변경자 */
+#page-changelogs table thead th:nth-child(8) { width: 14%; }   /* 사유 */
+
+#page-changelogs table thead th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 10px 12px;
+}
+#page-changelogs table tbody td {
+  padding: 10px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0; /* table-layout:fixed + overflow:hidden 동작 보장 */
+}
+/* 대상명·변경전후·사유: 줄바꿈 허용 */
+#page-changelogs table tbody td:nth-child(3),
+#page-changelogs table tbody td:nth-child(5),
+#page-changelogs table tbody td:nth-child(6),
+#page-changelogs table tbody td:nth-child(8) {
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  max-width: none;
+  line-height: 1.45;
+}
+
+/* ── 스펙 관리 그룹 테이블 — 매트릭스 칩 잘림 방지 ─────────────── */
+.slot-group-block table {
+  min-width: 480px;
+}
+.slot-group-block table thead th,
+.slot-group-block table tbody td {
+  padding: 9px 12px;
+}
+/* 자재 칩 열: 줄바꿈 허용 */
+.slot-group-block table tbody td:nth-child(5) {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+}
+
+/* ── 스펙-자재 연결 페이지 테이블 ───────────────────────────────── */
+#page-slot-materials .table-wrapper {
+  overflow-x: auto;
+}
+#page-slot-materials table {
+  min-width: 480px;
+}
+#page-slot-materials table thead th,
+#page-slot-materials table tbody td {
+  padding: 10px 14px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* ── 단열 스펙 테이블 ────────────────────────────────────────────── */
+#page-insulation-specs .table-wrapper,
+.spec-table {
+  overflow-x: auto;
+  min-width: 0;
+}
+.spec-table {
+  width: 100%;
+  min-width: 400px;
+}
+.spec-table thead th,
+.spec-table tbody td {
+  padding: 10px 14px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* ── 단열 패키지 매트릭스 래퍼 ──────────────────────────────────── */
+.insul-matrix {
+  min-width: 100%;
+}
+
+/* ── 매트릭스 테이블 (패키지 상세) ─────────────────────────────── */
+.std-matrix-table thead th,
+.std-matrix-table tbody td {
+  padding: 10px 14px;
+}
+.matrix-corner-cell {
+  min-width: 130px;
+  padding: 12px 14px;
+}
+.matrix-header-cell {
+  min-width: 150px;
+  padding: 12px 14px;
+}
+.matrix-row-header-inner {
+  padding: 10px 12px;
+}
+.matrix-cell-inner {
+  padding: 10px 12px;
+  min-height: 52px;
+}
+
+/* ── 카드/섹션 내부 패딩 정비 ───────────────────────────────────── */
+.card-body {
+  padding: 18px 20px;
+}
+.card-header {
+  padding: 14px 20px;
+}
+.filter-bar {
+  padding: 0;
+  margin-bottom: 14px;
+}
+
+/* ── 페이지 헤더 패딩 정비 ──────────────────────────────────────── */
+.page-header {
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ── 뱃지: 텍스트 잘림 방지 ────────────────────────────────────── */
+.badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── stat-grid: 작은 화면에서 카드 너비 최소 보장 ──────────────── */
+.stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+/* ── grid-2 / grid-3: 좁은 컨텐츠 영역 대응 ────────────────────── */
+.grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+/* ── 텍스트 노드 기본 줄바꿈 ────────────────────────────────────── */
+p, li, span.text-wrap {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ── 모달 내부 테이블 ───────────────────────────────────────────── */
+.modal .table-wrapper {
+  overflow-x: auto;
+}
+.modal table {
+  min-width: 320px;
+}
+
+/* ── 페이지네이션 패딩 ──────────────────────────────────────────── */
+.pagination {
+  padding: 14px 0 6px;
+  flex-wrap: wrap;
+}
+
+/* ── 반응형: 사이드바 너비 조정 시 콘텐츠 보호 ─────────────────── */
+@media (max-width: 1100px) {
+  :root { --sidebar-width: 220px; }
+  #content { padding: 18px 20px; }
+}
+@media (max-width: 900px) {
+  #content { padding: 14px 16px; }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 }
