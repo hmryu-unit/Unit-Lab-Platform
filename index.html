@@ -320,8 +320,16 @@
               </div>
               <p class="insul-note" id="insul-pkg-criteria-hint">[별표1] 공동주택 · 바닥난방</p>
               <p class="insul-note">셀에는 구조 요약 표시 · 클릭 시 기준/계산 U 확인 · 내벽은 기준 없음(구조만)</p>
-              <div style="overflow-x:auto">
-                <table class="insul-matrix" id="insul-pkg-matrix"></table>
+              <div class="insul-matrix-wrap">
+                <table class="insul-matrix" id="insul-pkg-matrix">
+                  <colgroup>
+                    <col class="col-part">
+                    <col class="col-zone">
+                    <col class="col-zone">
+                    <col class="col-zone">
+                    <col class="col-zone">
+                  </colgroup>
+                </table>
               </div>
               <div class="insul-cell-editor">
                 <div class="editor-title" id="insul-cell-editor-title">외벽 · 중부1 편집</div>
@@ -342,15 +350,24 @@
                   <div class="insul-u-struct-summary" id="insul-u-struct-summary"></div>
                   <div class="insul-u-meta" id="insul-u-meta"></div>
                 </div>
-                <table class="insul-layer-table">
-                  <thead>
-                    <tr>
-                      <th class="col-no">번호</th><th>소재</th>
-                      <th class="col-lambda">λ</th><th class="col-thick">mm</th><th class="col-r">R</th>
-                    </tr>
-                  </thead>
-                  <tbody id="insul-layer-tbody"></tbody>
-                </table>
+                <div class="insul-layer-table-wrap">
+                  <table class="insul-layer-table">
+                    <colgroup>
+                      <col class="col-no">
+                      <col><!-- 소재 -->
+                      <col class="col-lambda">
+                      <col class="col-thick">
+                      <col class="col-r">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th class="col-no">번호</th><th>소재</th>
+                        <th class="col-lambda">λ</th><th class="col-thick">mm</th><th class="col-r">R</th>
+                      </tr>
+                    </thead>
+                    <tbody id="insul-layer-tbody"></tbody>
+                  </table>
+                </div>
               </div>
               <div style="margin-top:14px;text-align:right">
                 <button type="button" class="btn btn-primary" id="insul-btn-pkg-save" disabled><i class="fas fa-save"></i> 패키지 저장</button>
