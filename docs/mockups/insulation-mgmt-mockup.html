@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단열 관리 — UI 목업 (UnitLab)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --primary-light: #ebf5ff;
+      --success: #0e9f6e;
+      --success-light: #f3faf7;
+      --warning: #c27803;
+      --warning-light: #fffbeb;
+      --danger: #e02424;
+      --danger-light: #fdf2f2;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --sidebar-width: 220px;
+      --header-height: 56px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+      --shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      color: var(--gray-800);
+      background: var(--gray-100);
+      min-height: 100vh;
+    }
+
+    .mock-banner {
+      background: linear-gradient(90deg, #1e3a8a, #1a56db);
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .mock-banner strong { font-weight: 600; }
+    .mock-banner-actions { display: flex; gap: 8px; }
+    .mock-banner .seg {
+      display: flex;
+      background: rgba(255,255,255,.15);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .mock-banner .seg button {
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,.85);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .mock-banner .seg button.active {
+      background: #fff;
+      color: var(--primary);
+    }
+
+    #app { display: flex; min-height: calc(100vh - 44px); }
+
+    #sidebar {
+      width: var(--sidebar-width);
+      background: var(--gray-900);
+      color: #fff;
+      flex-shrink: 0;
+      padding: 16px 0;
+    }
+    .sidebar-logo {
+      padding: 8px 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 12px;
+    }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+    }
+    .logo-text { font-weight: 700; font-size: 15px; }
+    .logo-sub { font-size: 11px; opacity: .55; }
+    .nav-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(255,255,255,.35);
+      padding: 12px 16px 6px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      color: rgba(255,255,255,.65);
+      font-size: 13.5px;
+      cursor: default;
+    }
+    .nav-item.active {
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      border-right: 3px solid var(--primary);
+    }
+    .nav-item i { width: 18px; text-align: center; opacity: .8; }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    #header {
+      height: var(--header-height);
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 24px;
+      flex: 1;
+      overflow: auto;
+    }
+
+    .page-desc {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-top: 4px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .toolbar .spacer { flex: 1; }
+    select, .inp {
+      padding: 7px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #fff;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary {
+      background: #fff;
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--gray-600);
+      border: 1px solid transparent;
+    }
+    .btn-ghost:hover { background: var(--gray-100); }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── 목록: 매트릭스 ── */
+    .matrix-wrap { overflow-x: auto; }
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .matrix th {
+      text-align: left;
+      padding: 12px 14px;
+      background: var(--gray-50);
+      border-bottom: 2px solid var(--gray-200);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+      white-space: nowrap;
+    }
+    .matrix th.zone { text-align: center; min-width: 200px; }
+    .matrix td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: top;
+    }
+    .matrix tr:hover td { background: var(--gray-50); }
+    .matrix .platform-cell {
+      min-width: 160px;
+    }
+    .platform-name { font-weight: 600; color: var(--gray-800); }
+    .platform-id { font-size: 11px; color: var(--gray-400); font-family: ui-monospace, monospace; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-unit { background: #dbeafe; color: #1e40af; }
+    .badge-liv { background: #fce7f3; color: #9d174d; }
+
+    .cell-stack {
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all .15s;
+      min-height: 72px;
+    }
+    .cell-stack:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .cell-stack.empty {
+      color: var(--gray-400);
+      font-style: italic;
+      border: 1px dashed var(--gray-300);
+      background: var(--gray-50);
+    }
+    .structure-line {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-800);
+      line-height: 1.45;
+      word-break: keep-all;
+    }
+    .cell-meta {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+    .pill-ok { color: var(--success); font-weight: 600; }
+    .pill-warn { color: var(--warning); font-weight: 600; }
+    .pill-muted { color: var(--gray-400); }
+
+    /* ── 작업대 ── */
+    .bench-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .bench-back {
+      margin-top: 4px;
+    }
+    .zone-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 4px;
+      background: var(--gray-100);
+      border-radius: 10px;
+      width: fit-content;
+    }
+    .zone-tab {
+      padding: 8px 18px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .zone-tab.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      font-weight: 600;
+    }
+
+    .bench-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .bench-grid { grid-template-columns: 1fr; }
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title i { color: var(--primary); }
+
+    .layer-list { display: flex; flex-direction: column; gap: 10px; }
+    .layer-row {
+      display: grid;
+      grid-template-columns: 100px 1fr  auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+    }
+    .layer-role {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--gray-500);
+    }
+    .layer-role span {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-700);
+      text-transform: none;
+      letter-spacing: 0;
+      margin-top: 2px;
+    }
+    .layer-mat select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .layer-tag {
+      font-size: 11px;
+      color: var(--gray-500);
+      margin-top: 4px;
+    }
+    .layer-fixed {
+      font-size: 13px;
+      color: var(--gray-600);
+      padding: 8px 0;
+    }
+
+    .preview-card {
+      position: sticky;
+      top: 16px;
+    }
+    .preview-card .card-body { padding: 20px; }
+    .preview-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--gray-400);
+      margin-bottom: 10px;
+    }
+    .structure-hero {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--gray-900);
+      padding: 16px;
+      background: linear-gradient(135deg, #f0f7ff 0%, #f9fafb 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      min-height: 80px;
+    }
+    .structure-hero .plus { color: var(--gray-400); font-weight: 400; margin: 0 4px; }
+    .preview-actions {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-primary:disabled {
+      background: var(--gray-200);
+      color: var(--gray-400);
+      cursor: not-allowed;
+    }
+
+    .verify-collapse {
+      margin-top: 20px;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .verify-collapse summary {
+      padding: 12px 16px;
+      background: var(--gray-50);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .verify-collapse summary::-webkit-details-marker { display: none; }
+    .verify-collapse summary::before {
+      content: '\f054';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      font-size: 10px;
+      transition: transform .15s;
+    }
+    .verify-collapse[open] summary::before { transform: rotate(90deg); }
+    .verify-body {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      font-size: 13px;
+    }
+    .verify-stat label { display: block; font-size: 11px; color: var(--gray-500); margin-bottom: 4px; }
+    .verify-stat .val { font-size: 18px; font-weight: 700; }
+    .verify-stat .val.fail { color: var(--danger); }
+    .verify-stat .val.pass { color: var(--success); }
+
+    .copy-bar {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hidden { display: none !important; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .legend i { margin-right: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="mock-banner">
+  <span><strong>UI 목업</strong> — 단열 관리 (구조 중심) · 실제 앱과 연동되지 않습니다</span>
+  <div class="mock-banner-actions">
+    <div class="seg" role="tablist">
+      <button type="button" id="btn-view-list" class="active" onclick="showView('list')">
+        <i class="fas fa-table"></i> 목록 (매트릭스)
+      </button>
+      <button type="button" id="btn-view-bench" onclick="showView('bench')">
+        <i class="fas fa-layer-group"></i> 작업대
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">U</div>
+      <div>
+        <div class="logo-text">UnitLab</div>
+        <div class="logo-sub">목업 전용</div>
+      </div>
+    </div>
+    <div class="nav-label">구조 관리</div>
+    <div class="nav-item"><i class="fas fa-layer-group"></i> 플랫폼 관리</div>
+    <div class="nav-item"><i class="fas fa-drafting-compass"></i> 구조 관리</div>
+    <div class="nav-item active"><i class="fas fa-temperature-low"></i> 단열 관리</div>
+    <div class="nav-item"><i class="fas fa-tags"></i> 패키지 관리</div>
+    <div class="nav-label">자재 관리</div>
+    <div class="nav-item"><i class="fas fa-box"></i> 자재 DB</div>
+  </nav>
+
+  <div id="main">
+    <header id="header">단열 관리</header>
+
+    <!-- ═══ 목록: 플랫폼 × 지역 매트릭스 ═══ -->
+    <div class="content" id="view-list">
+      <p class="page-desc" style="margin-bottom:16px">
+        셀의 <strong>단열 구조</strong>가 핵심입니다. 클릭하면 작업대로 이동합니다. U값·충족 여부는 보조 정보입니다.
+      </p>
+      <div class="toolbar">
+        <select>
+          <option>전체 브랜드</option>
+          <option>UNIT</option>
+          <option>LIV</option>
+        </select>
+        <select>
+          <option>전체 상태</option>
+          <option>미작성만</option>
+          <option>검증 미충족만</option>
+        </select>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-secondary"><i class="fas fa-cog"></i> 지역별 기준 U</button>
+      </div>
+
+      <div class="card matrix-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>플랫폼</th>
+              <th class="zone">중부1지역</th>
+              <th class="zone">중부2지역</th>
+              <th class="zone">남부지역</th>
+              <th class="zone">제주지역</th>
+            </tr>
+          </thead>
+          <tbody id="matrix-body"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><i class="fas fa-check-circle pill-ok"></i> 열관류 기준 충족</span>
+        <span><i class="fas fa-exclamation-circle pill-warn"></i> 미충족 (구조는 작성됨)</span>
+        <span><i class="fas fa-minus-circle pill-muted"></i> 검증 미실행 / 접기 영역</span>
+      </div>
+    </div>
+
+    <!-- ═══ 작업대 ═══ -->
+    <div class="content hidden" id="view-bench">
+      <div class="bench-header">
+        <button type="button" class="btn btn-secondary btn-sm bench-back" onclick="showView('list')">
+          <i class="fas fa-arrow-left"></i> 목록
+        </button>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span class="badge badge-unit">UNIT</span>
+            <h2 style="font-size:20px;font-weight:700" id="bench-title">U-Standard</h2>
+            <span class="platform-id" id="bench-id">u-standard</span>
+          </div>
+          <p class="page-desc">단열지역별로 <strong>외단열(판넬) · 내단열(단열재) · 석고 2ply</strong> 구조를 편집합니다.</p>
+        </div>
+      </div>
+
+      <div class="zone-tabs" id="zone-tabs"></div>
+
+      <div class="bench-grid">
+        <div class="card">
+          <div style="padding:20px">
+            <div class="section-title"><i class="fas fa-bars-staggered"></i> 단열 구조 (외 → 내)</div>
+            <div class="layer-list" id="layer-list"></div>
+            <div class="copy-bar">
+              <button type="button" class="btn btn-secondary btn-sm"><i class="fas fa-copy"></i> 이 구조를 다른 지역에 복사</button>
+              <button type="button" class="btn btn-ghost btn-sm">판넬만 복사</button>
+            </div>
+            <details class="verify-collapse">
+              <summary><i class="fas fa-calculator" style="margin-right:4px"></i> 열관류 검증 (부가 기능 · 접어두기)</summary>
+              <div class="verify-body">
+                <div class="verify-stat">
+                  <label>계산 U</label>
+                  <div class="val fail" id="v-u-calc">0.152</div>
+                </div>
+                <div class="verify-stat">
+                  <label>지역 기준</label>
+                  <div class="val" id="v-u-limit">0.150</div>
+                </div>
+                <div class="verify-stat">
+                  <label>판정</label>
+                  <div class="val fail" id="v-verdict">미충족</div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="preview-card card">
+          <div class="card-body">
+            <div class="preview-label">구조 미리보기 · 목록에 표시되는 문구</div>
+            <div class="structure-hero" id="structure-hero"></div>
+            <div class="preview-actions">
+              <button type="button" class="btn btn-primary" id="btn-save" disabled>
+                <i class="fas fa-save"></i> 저장
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm">
+                <i class="fas fa-sticky-note"></i> 시공·예외 메모
+              </button>
+            </div>
+            <p style="margin-top:14px;font-size:12px;color:var(--gray-500);line-height:1.5">
+              자재는 <strong>자재 DB</strong>에서 선택합니다. 같은 그라스울이라도 두께·밀도별로 별도 SKU입니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ZONES = [
+    { id: 'mid1', label: '중부1지역', uLimit: 0.150 },
+    { id: 'mid2', label: '중부2지역', uLimit: 0.155 },
+    { id: 'south', label: '남부지역', uLimit: 0.180 },
+    { id: 'jeju', label: '제주지역', uLimit: 0.170 }
+  ];
+
+  const MATERIALS = {
+    gw48_75: { label: '48K 그라스울 판넬', short: '48K GW판넬', thick: '75T', lambda: 0.036 },
+    gw48_100: { label: '48K 그라스울 판넬 (100T)', short: '48K GW판넬', thick: '100T', lambda: 0.036 },
+    mw60_100: { label: '60K 미네랄울', short: '60K MW', thick: '100T', lambda: 0.035 },
+    mw80_50: { label: '80K 미네랄울', short: '80K MW', thick: '50T', lambda: 0.034 },
+    gypsum2: { label: '석고보드 2ply (12.5+12.5)', short: '석고 2ply', thick: '', fixed: true }
+  };
+
+  const PLATFORMS = [
+    {
+      id: 'u-standard',
+      name: 'U-Standard',
+      brand: 'UNIT',
+      stacks: {
+        mid1: { ext: 'gw48_75', int: 'mw60_100', verify: 'pass' },
+        mid2: { ext: 'gw48_75', int: 'mw60_100', verify: 'pass' },
+        south: { ext: 'gw48_100', int: 'mw80_50', verify: 'warn' },
+        jeju: null
+      }
+    },
+    {
+      id: 'u-premium',
+      name: 'U-Premium',
+      brand: 'UNIT',
+      stacks: {
+        mid1: { ext: 'gw48_100', int: 'mw60_100', verify: 'pass' },
+        mid2: { ext: 'gw48_100', int: 'mw60_100', verify: 'muted' },
+        south: { ext: 'gw48_100', int: 'mw60_100', verify: 'pass' },
+        jeju: { ext: 'gw48_75', int: 'mw60_100', verify: 'pass' }
+      }
+    },
+    {
+      id: 'liv-a',
+      name: 'LIV Type-A',
+      brand: 'LIV',
+      stacks: {
+        mid1: { ext: 'gw48_75', int: 'mw80_50', verify: 'pass' },
+        mid2: null,
+        south: null,
+        jeju: null
+      }
+    }
+  ];
+
+  let currentPlatform = PLATFORMS[0];
+  let currentZone = 'mid1';
+  let savedSnapshot = '';
+
+  function formatPart(key) {
+    if (key === 'gypsum2') return MATERIALS.gypsum2.short;
+    const m = MATERIALS[key];
+    if (!m) return '';
+    return `${m.short} ${m.thick}`;
+  }
+
+  function buildStructure(ext, int) {
+    const parts = [];
+    if (ext && MATERIALS[ext]) parts.push(formatPart(ext));
+    if (int && MATERIALS[int]) parts.push(formatPart(int));
+    parts.push(MATERIALS.gypsum2.short);
+    return parts.filter(Boolean).join(' + ');
+  }
+
+  function verifyLabel(v) {
+    if (v === 'pass') return '<span class="pill-ok"><i class="fas fa-check-circle"></i> 충족</span>';
+    if (v === 'warn') return '<span class="pill-warn"><i class="fas fa-exclamation-circle"></i> 미충족</span>';
+    return '<span class="pill-muted">U 검증</span>';
+  }
+
+  function renderMatrix() {
+    const tbody = document.getElementById('matrix-body');
+    tbody.innerHTML = PLATFORMS.map(p => {
+      const brandCls = p.brand === 'LIV' ? 'badge-liv' : 'badge-unit';
+      const cells = ZONES.map(z => {
+        const st = p.stacks[z.id];
+        if (!st) {
+          return `<td><div class="cell-stack empty" onclick="openBench('${p.id}','${z.id}')">미작성 — 클릭하여 입력</div></td>`;
+        }
+        const str = buildStructure(st.ext, st.int);
+        return `<td>
+          <div class="cell-stack" onclick="openBench('${p.id}','${z.id}')">
+            <div class="structure-line">${str}</div>
+            <div class="cell-meta">${verifyLabel(st.verify)}</div>
+          </div>
+        </td>`;
+      }).join('');
+      return `<tr>
+        <td class="platform-cell">
+          <span class="badge ${brandCls}">${p.brand}</span>
+          <div class="platform-name">${p.name}</div>
+          <div class="platform-id">${p.id}</div>
+        </td>${cells}</tr>`;
+    }).join('');
+  }
+
+  function showView(name) {
+    document.getElementById('view-list').classList.toggle('hidden', name !== 'list');
+    document.getElementById('view-bench').classList.toggle('hidden', name !== 'bench');
+    document.getElementById('btn-view-list').classList.toggle('active', name === 'list');
+    document.getElementById('btn-view-bench').classList.toggle('active', name === 'bench');
+    document.getElementById('header').textContent = name === 'list' ? '단열 관리' : '단열 관리 — 작업대';
+  }
+
+  function openBench(platformId, zoneId) {
+    currentPlatform = PLATFORMS.find(p => p.id === platformId) || PLATFORMS[0];
+    currentZone = zoneId || 'mid1';
+    document.getElementById('bench-title').textContent = currentPlatform.name;
+    document.getElementById('bench-id').textContent = currentPlatform.id;
+    renderZoneTabs();
+    renderLayers();
+    savedSnapshot = getSnapshot();
+    syncSaveBtn();
+    showView('bench');
+  }
+
+  function renderZoneTabs() {
+    const el = document.getElementById('zone-tabs');
+    el.innerHTML = ZONES.map(z => {
+      const has = currentPlatform.stacks[z.id];
+      const dot = has ? '' : ' ○';
+      return `<button type="button" class="zone-tab ${z.id === currentZone ? 'active' : ''}"
+        onclick="selectZone('${z.id}')">${z.label}${dot}</button>`;
+    }).join('');
+  }
+
+  function selectZone(zid) {
+    currentZone = zid;
+    renderZoneTabs();
+    renderLayers();
+    savedSnapshot = getSnapshot();
+    syncSaveBtn();
+  }
+
+  function getCurrentStack() {
+    return currentPlatform.stacks[currentZone] || { ext: 'gw48_75', int: 'mw60_100', verify: 'muted' };
+  }
+
+  function renderLayers() {
+    const st = getCurrentStack();
+    const ext = st.ext || 'gw48_75';
+    const int = st.int || 'mw60_100';
+
+    const matOpts = (selected) => Object.entries(MATERIALS)
+      .filter(([k]) => k !== 'gypsum2')
+      .map(([k, m]) => `<option value="${k}" ${k === selected ? 'selected' : ''}>${m.label}</option>`)
+      .join('');
+
+    document.getElementById('layer-list').innerHTML = `
+      <div class="layer-row">
+        <div class="layer-role">외단열<span>판넬</span></div>
+        <div class="layer-mat">
+          <select id="sel-ext" onchange="onLayerChange()">${matOpts(ext)}</select>
+          <div class="layer-tag">자재 DB · 단열재/판넬</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-role">내단열<span>단열재</span></div>
+        <div class="layer-mat">
+          <select id="sel-int" onchange="onLayerChange()">${matOpts(int)}</select>
+          <div class="layer-tag">자재 DB · 단열재</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-role">실내<span>마감</span></div>
+        <div class="layer-fixed">${MATERIALS.gypsum2.label}</div>
+        <span class="layer-tag">플랫폼 공통</span>
+      </div>`;
+
+    const zone = ZONES.find(z => z.id === currentZone);
+    document.getElementById('v-u-limit').textContent = zone ? zone.uLimit.toFixed(3) : '—';
+
+    onLayerChange();
+  }
+
+  function onLayerChange() {
+    const ext = document.getElementById('sel-ext')?.value;
+    const int = document.getElementById('sel-int')?.value;
+    const str = buildStructure(ext, int);
+    const hero = document.getElementById('structure-hero');
+    hero.innerHTML = str.split(' + ').map((p, i) =>
+      (i ? '<span class="plus">+</span>' : '') + `<span>${p}</span>`
+    ).join('');
+
+    syncSaveBtn();
+  }
+
+  function getSnapshot() {
+    const ext = document.getElementById('sel-ext')?.value || '';
+    const int = document.getElementById('sel-int')?.value || '';
+    return `${currentPlatform.id}|${currentZone}|${ext}|${int}`;
+  }
+
+  function syncSaveBtn() {
+    const btn = document.getElementById('btn-save');
+    const dirty = getSnapshot() !== savedSnapshot;
+    btn.disabled = !dirty;
+  }
+
+  document.getElementById('btn-save').addEventListener('click', () => {
+    if (document.getElementById('btn-save').disabled) return;
+    const ext = document.getElementById('sel-ext').value;
+    const int = document.getElementById('sel-int').value;
+    currentPlatform.stacks[currentZone] = { ext, int, verify: 'pass' };
+    savedSnapshot = getSnapshot();
+    syncSaveBtn();
+    renderMatrix();
+    alert('목업: 저장되었습니다.\n\n' + buildStructure(ext, int));
+  });
+
+  // init
+  renderMatrix();
+  showView('list');
+</script>
+</body>
+</html>

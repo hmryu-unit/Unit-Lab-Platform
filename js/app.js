@@ -18,6 +18,7 @@ const State = {
   variants: [],
   changeLogs: [],
   enums: [],       // 선택지 관리
+  lineupEngineering: [],  // 플랫폼별 구조·단열 서술 (lineup_engineering 테이블)
   filters: {}
 };
 
@@ -599,6 +600,10 @@ function navigate(page) {
   const titles = {
     dashboard: '대시보드',
     lineups: '플랫폼 관리',
+    'structure-mgmt': '구조 관리',
+    'insulation-specs': '단열 스펙 관리',
+    'insulation-packages': '단열 패키지 관리',
+    'insulation-finish': '실내 마감 옵션',
     'packages': '패키지 관리',
     'package-detail': '패키지 상세',
     grades: '등급 카탈로그',
@@ -615,6 +620,10 @@ function navigate(page) {
   const renders = {
     dashboard: renderDashboard,
     lineups: renderLineups,
+    'structure-mgmt': renderStructureMgmt,
+    'insulation-specs': () => Insulation.renderSpecsPage(),
+    'insulation-packages': () => Insulation.renderPackagesPage(),
+    'insulation-finish': () => Insulation.renderFinishPage(),
     'packages': renderPackages,
     grades: renderGrades,
     slots: renderSlots,
@@ -658,6 +667,14 @@ async function loadAll() {
     State.variants = variants.data || [];
     State.changeLogs = logs.data || [];
     State.enums = (enums.data || []).sort((a, b) => (a.sort_order||99) - (b.sort_order||99));
+
+    try {
+      const eng = await API.get('lineup_engineering');
+      State.lineupEngineering = eng.data || [];
+    } catch (e) {
+      console.warn('[loadAll] lineup_engineering 테이블 없음 — docs/supabase/lineup_engineering.sql 실행 필요', e);
+      State.lineupEngineering = [];
+    }
 
     // 동적 select 채우기
     _populateDynamicSelects();
@@ -1294,6 +1311,206 @@ function deleteLineup(lineupId, name) {
   });
 }
 
+// ===== 플랫폼 구조·단열 (lineup_engineering) =====
+function getLineupEng(lineupId) {
+  const row = State.lineupEngineering.find(e => e.lineup_id === lineupId);
+  return {
+    id: row?.id || '',
+    structure_spec: row?.structure_spec || '',
+    structure_logic: row?.structure_logic || '',
+    insulation_notes: row?.insulation_notes || ''
+  };
+}
+
+function lineupEngRecordId(lineupId) {
+  return 'le_' + String(lineupId).replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+async function saveLineupEngineering(lineupId, fields) {
+  const existing = State.lineupEngineering.find(e => e.lineup_id === lineupId);
+  const payload = {
+    lineup_id: lineupId,
+    structure_spec: fields.structure_spec ?? existing?.structure_spec ?? '',
+    structure_logic: fields.structure_logic ?? existing?.structure_logic ?? '',
+    insulation_notes: fields.insulation_notes ?? existing?.insulation_notes ?? ''
+  };
+  try {
+    if (existing?.id) {
+      await API.put('lineup_engineering', existing.id, { ...existing, ...payload });
+    } else {
+      await API.post('lineup_engineering', { id: lineupEngRecordId(lineupId), ...payload });
+    }
+    const eng = await API.get('lineup_engineering');
+    State.lineupEngineering = eng.data || [];
+    return true;
+  } catch (e) {
+    console.error('[saveLineupEngineering]', e);
+    showToast('저장 실패 — Supabase에 lineup_engineering 테이블이 있는지 확인하세요. (docs/supabase/lineup_engineering.sql)', 'error');
+    return false;
+  }
+}
+
+function _engNormText(v) {
+  return (v ?? '').replace(/\r\n/g, '\n');
+}
+
+function isEngStructureDirty(lineupId, specId, logicId) {
+  const eng = getLineupEng(lineupId);
+  const spec = _engNormText(document.getElementById(specId)?.value);
+  const logic = _engNormText(document.getElementById(logicId)?.value);
+  return spec !== _engNormText(eng.structure_spec) || logic !== _engNormText(eng.structure_logic);
+}
+
+function isEngInsulationDirty(lineupId, notesId, pkgSelectId) {
+  const eng = getLineupEng(lineupId);
+  const notesDirty = _engNormText(document.getElementById(notesId)?.value) !== _engNormText(eng.insulation_notes);
+  let pkgDirty = false;
+  if (pkgSelectId && typeof Insulation !== 'undefined') {
+    const sel = document.getElementById(pkgSelectId);
+    const saved = Insulation.getLineupPackageId(lineupId) || '';
+    pkgDirty = (sel?.value || '') !== saved;
+  }
+  return notesDirty || pkgDirty;
+}
+
+function bindEngSaveControls({ btnId, lineupId, section, inputIds }) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const sync = () => {
+    const dirty = section === 'structure'
+      ? isEngStructureDirty(lineupId, inputIds[0], inputIds[1])
+      : isEngInsulationDirty(lineupId, inputIds[0], inputIds[1]);
+    btn.disabled = !dirty;
+  };
+  btn._engSync = sync;
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', sync);
+      el.addEventListener('change', sync);
+    }
+  });
+  sync();
+}
+
+function refreshEngSaveBtn(btnId) {
+  document.getElementById(btnId)?._engSync?.();
+}
+
+function _engSaveBtnHtml(btnId, label, onclick) {
+  return `<button type="button" id="${btnId}" class="btn btn-primary btn-sm" disabled
+    onclick="${onclick}"><i class="fas fa-save"></i> ${label}</button>`;
+}
+
+async function saveLineupEngFromDetail(section) {
+  if (!currentLineupId) return;
+  const btnId = section === 'structure' ? 'eng-save-detail-structure' : 'eng-save-detail-insulation';
+  const btn = document.getElementById(btnId);
+  if (btn?.disabled) return;
+  const fields = {};
+  if (section === 'structure') {
+    fields.structure_spec = document.getElementById('ld-structure-spec')?.value ?? '';
+    fields.structure_logic = document.getElementById('ld-structure-logic')?.value ?? '';
+  } else if (section === 'insulation') {
+    fields.insulation_notes = document.getElementById('ld-insulation-notes')?.value ?? '';
+    if (typeof Insulation !== 'undefined') {
+      const pkgId = document.getElementById('ld-insulation-package')?.value ?? '';
+      Insulation.setLineupPackageId(currentLineupId, pkgId);
+    }
+  }
+  const ok = await saveLineupEngineering(currentLineupId, fields);
+  if (ok) {
+    showToast(section === 'structure' ? '구조 정보가 저장되었습니다' : '단열 정보가 저장되었습니다');
+    refreshEngSaveBtn(btnId);
+  }
+}
+
+async function saveLineupEngFromMgmt(lineupId, section) {
+  const btnId = section === 'structure'
+    ? `eng-save-mgmt-structure-${lineupId}`
+    : `eng-save-mgmt-insulation-${lineupId}`;
+  const btn = document.getElementById(btnId);
+  if (btn?.disabled) return;
+  const fields = {};
+  if (section === 'structure') {
+    fields.structure_spec = document.getElementById(`eng-spec-${lineupId}`)?.value ?? '';
+    fields.structure_logic = document.getElementById(`eng-logic-${lineupId}`)?.value ?? '';
+  } else {
+    fields.insulation_notes = document.getElementById(`eng-insul-${lineupId}`)?.value ?? '';
+  }
+  const ok = await saveLineupEngineering(lineupId, fields);
+  if (ok) {
+    showToast('저장되었습니다');
+    refreshEngSaveBtn(btnId);
+  }
+}
+
+function _ldNarrativeField(label, id, value, placeholder, rows = 5) {
+  return `
+    <div class="ld-narrative-field">
+      <label class="ld-narrative-label" for="${id}">${label}</label>
+      <textarea id="${id}" class="ld-narrative-textarea" rows="${rows}"
+        placeholder="${escHtml(placeholder)}">${escHtml(value)}</textarea>
+    </div>`;
+}
+
+function renderLineupStructureSection(lineupId) {
+  const eng = getLineupEng(lineupId);
+  const el = document.getElementById('detail-structure-section');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="ld-section card">
+      <div class="ld-section-head">
+        <div class="ld-section-title">
+          <i class="fas fa-drafting-compass" style="color:#1a56db"></i>
+          구조 규격 및 로직
+        </div>
+        <span class="ld-section-hint">서술형 — 추후 규격·로직 자동화 예정</span>
+      </div>
+      <div class="card-body ld-section-body">
+        ${_ldNarrativeField('구조 규격', 'ld-structure-spec', eng.structure_spec, '플랫폼 구조 규격을 서술하세요…', 6)}
+        ${_ldNarrativeField('구조 로직', 'ld-structure-logic', eng.structure_logic, '구조 적용·변형 로직을 서술하세요…', 6)}
+        <div class="ld-section-actions">
+          ${_engSaveBtnHtml('eng-save-detail-structure', '구조 저장', "saveLineupEngFromDetail('structure')")}
+        </div>
+      </div>
+    </div>`;
+  bindEngSaveControls({
+    btnId: 'eng-save-detail-structure',
+    lineupId,
+    section: 'structure',
+    inputIds: ['ld-structure-spec', 'ld-structure-logic']
+  });
+}
+
+function renderLineupInsulationSection(lineupId) {
+  const eng = getLineupEng(lineupId);
+  const el = document.getElementById('detail-insulation-section');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="ld-section card">
+      <div class="ld-section-head">
+        <div class="ld-section-title">
+          <i class="fas fa-temperature-low" style="color:#059669"></i>
+          단열 정보
+        </div>
+        <span class="ld-section-hint">서술형 — 추후 단열 계산·연동 예정</span>
+      </div>
+      <div class="card-body ld-section-body">
+        ${_ldNarrativeField('단열 메모', 'ld-insulation-notes', eng.insulation_notes, '단열 사양·층 구성·주의사항을 서술하세요…', 8)}
+        <div class="ld-section-actions">
+          ${_engSaveBtnHtml('eng-save-detail-insulation', '단열 저장', "saveLineupEngFromDetail('insulation')")}
+        </div>
+      </div>
+    </div>`;
+  bindEngSaveControls({
+    btnId: 'eng-save-detail-insulation',
+    lineupId,
+    section: 'insulation',
+    inputIds: ['ld-insulation-notes']
+  });
+}
+
 // ===================================================
 // ===== 플랫폼 상세 페이지 =====
 // ===================================================
@@ -1343,7 +1560,9 @@ async function renderLineupDetail(lineupId) {
     </div>
   `;
 
-  // ── 카테고리별 선택 그리드 ──
+  renderLineupStructureSection(lineupId);
+  if (typeof Insulation !== 'undefined') Insulation.renderLineupSection(lineupId);
+  else renderLineupInsulationSection(lineupId);
   renderLineupSetTypeGrid(lineupId);
 }
 
@@ -1501,15 +1720,134 @@ function renderLineupSetTypeGrid(lineupId) {
     </div>` : '';
 
   grid.innerHTML = `
-    <div class="lds-wrap">
-      <div class="lds-header">
-        <div class="lds-header-title">
-          <i class="fas fa-cubes" style="color:#1a56db;margin-right:6px"></i>분류별 패키지 선택
+    <div class="ld-section card lds-section-card">
+      <div class="ld-section-head">
+        <div class="ld-section-title">
+          <i class="fas fa-cubes" style="color:#1a56db"></i>
+          분류별 패키지 선택
         </div>
-        <div class="lds-header-desc">각 등급에서 이 플랫폼에 적용할 등급을 선택하세요</div>
+        <span class="ld-section-hint">각 패키지에서 이 플랫폼에 적용할 등급을 선택하세요</span>
       </div>
-      ${sectionsHtml}${uncatHtml}
+      <div class="card-body ld-section-body lds-wrap">
+        ${sectionsHtml}${uncatHtml}
+      </div>
     </div>`;
+}
+
+// ===== 구조 관리 / 단열 관리 (플랫폼 통합) =====
+function _engMgmtLineupsSorted() {
+  return [...State.lineups].sort((a, b) => {
+    const ba = (a.brand || '').localeCompare(b.brand || '');
+    if (ba !== 0) return ba;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+}
+
+function _engHasStructureText(eng) {
+  return !!(eng.structure_spec?.trim() || eng.structure_logic?.trim());
+}
+
+function _engHasInsulationText(eng) {
+  return !!eng.insulation_notes?.trim();
+}
+
+function renderStructureMgmt() {
+  const el = document.getElementById('structure-mgmt-list');
+  if (!el) return;
+  const lineups = _engMgmtLineupsSorted();
+  if (lineups.length === 0) {
+    el.innerHTML = '<div class="empty-state">등록된 플랫폼이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = lineups.map(l => {
+    const eng = getLineupEng(l.id);
+    const filled = _engHasStructureText(eng);
+    return `
+      <div class="eng-mgmt-card card ${filled ? 'eng-mgmt-card--filled' : ''}">
+        <div class="eng-mgmt-card-head">
+          <div class="eng-mgmt-card-title">
+            ${brandBadge(l.brand)}
+            <span class="eng-mgmt-name">${escHtml(l.name)}</span>
+            <span class="font-mono eng-mgmt-id">${escHtml(l.id)}</span>
+          </div>
+          <div class="eng-mgmt-card-actions">
+            <button type="button" class="btn btn-xs btn-ghost" onclick="navigateToLineupDetail('${escHtml(l.id)}')" title="플랫폼 상세">
+              <i class="fas fa-external-link-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body eng-mgmt-card-body">
+          <div class="ld-narrative-field">
+            <label class="ld-narrative-label" for="eng-spec-${escHtml(l.id)}">구조 규격</label>
+            <textarea id="eng-spec-${escHtml(l.id)}" class="ld-narrative-textarea" rows="4"
+              placeholder="구조 규격 서술…">${escHtml(eng.structure_spec)}</textarea>
+          </div>
+          <div class="ld-narrative-field">
+            <label class="ld-narrative-label" for="eng-logic-${escHtml(l.id)}">구조 로직</label>
+            <textarea id="eng-logic-${escHtml(l.id)}" class="ld-narrative-textarea" rows="4"
+              placeholder="구조 로직 서술…">${escHtml(eng.structure_logic)}</textarea>
+          </div>
+          <div class="ld-section-actions">
+            ${_engSaveBtnHtml(`eng-save-mgmt-structure-${escHtml(l.id)}`, '저장', `saveLineupEngFromMgmt('${escHtml(l.id)}','structure')`)}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  lineups.forEach(l => {
+    bindEngSaveControls({
+      btnId: `eng-save-mgmt-structure-${l.id}`,
+      lineupId: l.id,
+      section: 'structure',
+      inputIds: [`eng-spec-${l.id}`, `eng-logic-${l.id}`]
+    });
+  });
+}
+
+function renderInsulationMgmt() {
+  const el = document.getElementById('insulation-mgmt-list');
+  if (!el) return;
+  const lineups = _engMgmtLineupsSorted();
+  if (lineups.length === 0) {
+    el.innerHTML = '<div class="empty-state">등록된 플랫폼이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = lineups.map(l => {
+    const eng = getLineupEng(l.id);
+    const filled = _engHasInsulationText(eng);
+    return `
+      <div class="eng-mgmt-card card ${filled ? 'eng-mgmt-card--filled' : ''}">
+        <div class="eng-mgmt-card-head">
+          <div class="eng-mgmt-card-title">
+            ${brandBadge(l.brand)}
+            <span class="eng-mgmt-name">${escHtml(l.name)}</span>
+            <span class="font-mono eng-mgmt-id">${escHtml(l.id)}</span>
+          </div>
+          <div class="eng-mgmt-card-actions">
+            <button type="button" class="btn btn-xs btn-ghost" onclick="navigateToLineupDetail('${escHtml(l.id)}')" title="플랫폼 상세">
+              <i class="fas fa-external-link-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body eng-mgmt-card-body">
+          <div class="ld-narrative-field">
+            <label class="ld-narrative-label" for="eng-insul-${escHtml(l.id)}">단열 메모</label>
+            <textarea id="eng-insul-${escHtml(l.id)}" class="ld-narrative-textarea" rows="6"
+              placeholder="단열 정보 서술…">${escHtml(eng.insulation_notes)}</textarea>
+          </div>
+          <div class="ld-section-actions">
+            ${_engSaveBtnHtml(`eng-save-mgmt-insulation-${escHtml(l.id)}`, '저장', `saveLineupEngFromMgmt('${escHtml(l.id)}','insulation')`)}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  lineups.forEach(l => {
+    bindEngSaveControls({
+      btnId: `eng-save-mgmt-insulation-${l.id}`,
+      lineupId: l.id,
+      section: 'insulation',
+      inputIds: [`eng-insul-${l.id}`]
+    });
+  });
 }
 
 async function selectSetForLineup(lineupId, setTypeId, setId, existingSelId) {

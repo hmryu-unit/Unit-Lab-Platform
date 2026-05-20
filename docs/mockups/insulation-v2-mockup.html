@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단열 관리 v2 — 스펙·구조·연결 목업</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a56db; --primary-light: #ebf5ff;
+      --success: #0e9f6e; --success-light: #f3faf7;
+      --warning: #c27803; --danger: #e02424;
+      --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+      --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+      --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--gray-800); background: var(--gray-100); }
+
+    .banner { background: linear-gradient(90deg, #065f46, #059669); color: #fff; padding: 12px 20px; font-size: 12.5px; line-height: 1.55; }
+    .banner ul { margin: 8px 0 0 18px; opacity: .95; }
+    .banner code { background: rgba(0,0,0,.2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tabs button {
+      padding: 9px 18px; border: 1px solid var(--gray-300); background: #fff;
+      border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500;
+    }
+    .tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card { background: #fff; border: 1px solid var(--gray-200); border-radius: 10px; margin-bottom: 16px; }
+    .card-h { padding: 14px 18px; border-bottom: 1px solid var(--gray-100); font-weight: 700; font-size: 14px; }
+    .card-b { padding: 18px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px;
+      border-radius: 6px; border: none; font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit;
+    }
+    .btn-p { background: var(--primary); color: #fff; }
+    .btn-s { background: #fff; border: 1px solid var(--gray-300); color: var(--gray-700); }
+    .btn-g { background: transparent; color: var(--gray-600); }
+    .btn-xs { padding: 4px 8px; font-size: 11px; }
+    .btn-p:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; }
+
+    .note { font-size: 12px; color: var(--gray-500); line-height: 1.5; margin-bottom: 12px; }
+    .note strong { color: var(--gray-700); }
+
+    .spec-table { width: 100%; border-collapse: collapse; }
+    .spec-table th, .spec-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--gray-100); }
+    .spec-table th { background: var(--gray-50); font-size: 11px; color: var(--gray-600); font-weight: 600; }
+    .link-mat { color: var(--primary); cursor: pointer; font-weight: 500; }
+    .link-mat.muted { color: var(--gray-400); font-weight: 400; }
+
+    .layer-table { width: 100%; border-collapse: collapse; border: 1px solid var(--gray-300); }
+    .layer-table th {
+      background: #e8eef7; border: 1px solid var(--gray-300); padding: 8px 6px;
+      font-size: 12px; font-weight: 600; color: var(--gray-700);
+    }
+    .layer-table td { border: 1px solid var(--gray-300); padding: 4px 6px; vertical-align: middle; }
+    .layer-table select, .layer-table input {
+      width: 100%; border: 1px solid var(--gray-200); padding: 5px 6px; font-size: 12.5px;
+      font-family: inherit; border-radius: 3px; background: #fff;
+    }
+    .layer-table input:focus, .layer-table select:focus { outline: none; border-color: var(--primary); }
+    .layer-table .col-no { width: 40px; text-align: center; background: var(--gray-50); color: var(--gray-500); font-size: 11px; }
+    .layer-table .col-role { width: 88px; font-size: 11px; color: var(--gray-500); background: var(--gray-50); text-align: center; }
+    .layer-table .col-lambda { width: 96px; }
+    .layer-table .col-thick { width: 84px; }
+    .layer-table .col-r { width: 96px; }
+    .layer-table .col-r input { background: #f8fafc; text-align: right; font-variant-numeric: tabular-nums; }
+    .layer-table tr.surface td { background: #f0fdf4; }
+    .layer-table tr.surface input, .layer-table tr.surface select { background: #f0fdf4; font-weight: 500; }
+    .layer-table tr.finish-row td { background: #fffbeb; }
+    .layer-table tr.finish-row select { background: #fffbeb; }
+
+    .pkg-head { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
+    .pkg-head .field label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 4px; }
+    .pkg-head input, .pkg-head select { padding: 8px 10px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13px; min-width: 160px; font-family: inherit; }
+    .legal-box {
+      font-size: 12px; color: #065f46; background: #ecfdf5; border: 1px solid #6ee7b7;
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; line-height: 1.55;
+    }
+    .legal-box strong { font-weight: 600; }
+
+    .pkg-summary {
+      display: grid; grid-template-columns: 1fr 200px; gap: 14px; margin-top: 16px; align-items: stretch;
+    }
+    @media (max-width: 720px) { .pkg-summary { grid-template-columns: 1fr; } }
+
+    .structure-out { padding: 14px 16px; background: var(--primary-light); border: 1px solid #93c5fd; border-radius: 8px; }
+    .structure-out .lbl { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 6px; }
+    .structure-out .txt { font-size: 14px; font-weight: 600; color: var(--gray-900); line-height: 1.5; }
+
+    .u-box {
+      padding: 16px; border-radius: 10px; text-align: center;
+      background: linear-gradient(160deg, #1e3a8a, #1a56db); color: #fff;
+    }
+    .u-box .lbl { font-size: 11px; opacity: .85; margin-bottom: 6px; }
+    .u-box .val { font-size: 32px; font-weight: 700; letter-spacing: -.02em; }
+    .u-box .unit { font-size: 14px; font-weight: 500; opacity: .9; }
+    .u-box .sub { font-size: 11px; margin-top: 8px; opacity: .8; line-height: 1.4; }
+
+    .matrix { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .matrix th { background: var(--gray-50); padding: 10px; border-bottom: 2px solid var(--gray-200); font-size: 11px; }
+    .matrix td { padding: 10px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+    .matrix select { width: 100%; max-width: 240px; padding: 6px; font-size: 12px; border: 1px solid var(--gray-300); border-radius: 5px; }
+    .matrix .part-col { width: 88px; background: var(--gray-50); font-weight: 600; text-align: left; padding-left: 12px; }
+    .matrix td.cell {
+      cursor: pointer; vertical-align: top; min-width: 130px; padding: 8px 10px;
+      transition: background .12s, box-shadow .12s;
+    }
+    .matrix td.cell:hover { background: var(--gray-50); }
+    .matrix td.cell.active { background: var(--primary-light); box-shadow: inset 0 0 0 2px var(--primary); }
+    .matrix .u-mini { font-size: 13px; font-weight: 700; color: var(--primary); }
+    .matrix .struct-mini { font-size: 10.5px; color: var(--gray-500); margin-top: 4px; line-height: 1.35; }
+
+    .pkg-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 900px) { .pkg-layout { grid-template-columns: 1fr; } }
+    .pkg-list { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; }
+    .pkg-list-item {
+      padding: 12px 14px; border-bottom: 1px solid var(--gray-100); cursor: pointer;
+    }
+    .pkg-list-item:hover { background: var(--gray-50); }
+    .pkg-list-item.active { background: var(--primary-light); border-left: 3px solid var(--primary); }
+    .pkg-list-item .t { font-weight: 600; font-size: 13px; }
+    .pkg-list-item .d { font-size: 11px; color: var(--gray-500); margin-top: 2px; font-family: monospace; }
+    .cell-editor-wrap {
+      margin-top: 18px; padding-top: 18px; border-top: 2px solid var(--gray-200);
+    }
+    .cell-editor-wrap .editor-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--gray-800); }
+
+    .finish-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+    @media (max-width: 800px) { .finish-layout { grid-template-columns: 1fr; } }
+    .finish-list { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; }
+    .finish-list-item {
+      padding: 12px 14px; border-bottom: 1px solid var(--gray-100); cursor: pointer;
+    }
+    .finish-list-item:hover { background: var(--gray-50); }
+    .finish-list-item.active { background: var(--primary-light); border-left: 3px solid var(--primary); }
+    .finish-list-item .t { font-weight: 600; font-size: 13px; }
+    .finish-list-item .d { font-size: 11px; color: var(--gray-500); margin-top: 3px; }
+    .finish-editor h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .finish-editor .meta { font-size: 12px; color: var(--gray-500); margin-bottom: 12px; }
+
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #fff; border-radius: 12px; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; }
+    .modal-h { padding: 16px 18px; border-bottom: 1px solid var(--gray-200); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .modal-b { padding: 18px; }
+    .modal-f { padding: 12px 18px; border-top: 1px solid var(--gray-100); display: flex; justify-content: flex-end; gap: 8px; }
+    .mat-row { padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+    .mat-row.sel { border-color: var(--primary); background: var(--primary-light); }
+  </style>
+</head>
+<body>
+
+<div class="banner">
+  <strong>단열 관리 v2 목업</strong> — 에너지절약설계기준 [별표5] 표면저항(Rᵢ·Rₒ) 반영
+  <ul>
+    <li>단열 <strong>패키지</strong> = 외벽·내벽·지붕·바닥·층간바닥 × 중부1·중부2·남부·제주</li>
+    <li>U = 1 / (Rₒ + Σd/λ + R마감 + Rᵢ) — 표면저항 <strong>법적 필수 포함</strong></li>
+  </ul>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button type="button" class="active" data-tab="specs">① 단열 스펙</button>
+    <button type="button" data-tab="packages">② 단열 패키지</button>
+    <button type="button" data-tab="platforms">③ 플랫폼 ↔ 패키지</button>
+    <button type="button" data-tab="finish">④ 실내 마감 옵션</button>
+  </div>
+
+  <section class="panel active" id="panel-specs">
+    <p class="note">단열 스펙 DB — <strong>판넬·단열재·마감재</strong> 공통 등록(기본명·λ). 두께는 패키지·마감 옵션에서 설정. 자재 DB와 1:1 연결.</p>
+    <div class="card">
+      <div class="card-h" style="display:flex;justify-content:space-between;align-items:center">
+        단열 스펙 목록
+        <button type="button" class="btn btn-p btn-xs"><i class="fas fa-plus"></i> 스펙 추가</button>
+      </div>
+      <div class="card-b" style="padding:0">
+        <table class="spec-table">
+          <thead>
+            <tr><th>스펙명</th><th>분류</th><th>연결 자재</th><th>기본 λ</th><th></th></tr>
+          </thead>
+          <tbody id="spec-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-packages">
+    <p class="note"><strong>단열 패키지</strong>를 만들고, 부위×단열지역 셀마다 구조·U를 설정합니다. 플랫폼은 패키지를 <strong>하나</strong>만 선택합니다.</p>
+    <div class="pkg-layout">
+      <aside>
+        <div class="pkg-list" id="pkg-list"></div>
+        <button type="button" class="btn btn-s btn-xs" style="margin-top:8px;width:100%" onclick="addInsulationPackage()">
+          <i class="fas fa-plus"></i> 패키지 추가
+        </button>
+      </aside>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-b">
+          <div class="pkg-head">
+            <div class="field"><label>패키지명</label><input type="text" id="pkg-name" oninput="onPkgMetaInput()"></div>
+            <div class="field"><label>코드</label><input type="text" id="pkg-code" style="font-family:monospace;min-width:130px" oninput="onPkgMetaInput()"></div>
+          </div>
+          <p class="note" style="margin-top:0">셀을 클릭해 편집 · [별표5] 표면저항은 부위별 자동 적용</p>
+          <div style="overflow-x:auto">
+            <table class="matrix" id="pkg-matrix"></table>
+          </div>
+
+          <div class="cell-editor-wrap" id="cell-editor">
+            <div class="editor-title" id="cell-editor-title">외벽 · 중부1 편집</div>
+            <div class="pkg-head" style="margin-bottom:10px">
+              <div class="field" id="field-exposure">
+                <label>외기 조건 (Rₒ)</label>
+                <select id="pkg-exposure" onchange="onExposureChange()">
+                  <option value="direct" id="opt-direct">외기 직접</option>
+                  <option value="indirect" id="opt-indirect">외기 간접</option>
+                </select>
+              </div>
+            </div>
+            <div class="legal-box" id="legal-surface-hint"></div>
+            <table class="layer-table">
+              <thead>
+                <tr>
+                  <th class="col-no">번호</th>
+                  <th class="col-role">구분</th>
+                  <th>소재 이름</th>
+                  <th class="col-lambda">열전도율 (W/m·K)</th>
+                  <th class="col-thick">두께 (mm)</th>
+                  <th class="col-r">열저항 (㎡·K/W)</th>
+                </tr>
+              </thead>
+              <tbody id="layer-tbody"></tbody>
+            </table>
+            <div class="pkg-summary">
+              <div class="structure-out">
+                <div class="lbl">구조 요약</div>
+                <div class="txt" id="structure-txt">—</div>
+              </div>
+              <div class="u-box">
+                <div class="lbl" id="u-part-label">열관류율 U</div>
+                <div><span class="val" id="u-val">—</span> <span class="unit">W/m²·K</span></div>
+                <div class="sub" id="u-breakdown">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;text-align:right">
+            <button type="button" class="btn btn-p" id="btn-pkg-save" disabled><i class="fas fa-save"></i> 패키지 저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-platforms">
+    <p class="note">플랫폼마다 <strong>단열 패키지 1개</strong>를 지정합니다. 외벽·내벽·지붕·바닥·층간·지역별 구성은 패키지에 포함됩니다.</p>
+    <div class="card"><div class="card-b" style="overflow-x:auto"><table class="matrix" id="platform-matrix"></table></div></div>
+  </section>
+
+  <section class="panel" id="panel-finish">
+    <p class="note"><strong>플랫폼 공통</strong> 실내 마감 옵션. 레이어 소재는 ① 단열 스펙의 <strong>마감재</strong>를 드롭다운(이름 오름차순)으로 선택하고, 두께(mm)만 입력합니다.</p>
+    <div class="card">
+      <div class="card-b">
+        <div class="finish-layout">
+          <div>
+            <div class="finish-list" id="finish-list"></div>
+            <button type="button" class="btn btn-s btn-xs" style="margin-top:8px;width:100%" onclick="addFinishOption()">
+              <i class="fas fa-plus"></i> 옵션 추가
+            </button>
+          </div>
+          <div class="finish-editor" id="finish-editor"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="modal-bg" id="modal-mat">
+  <div class="modal">
+    <div class="modal-h">
+      <span id="modal-mat-title">자재 연결</span>
+      <button type="button" class="btn btn-g btn-xs" onclick="closeMatModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-b"><div id="mat-list"></div></div>
+    <div class="modal-f">
+      <button type="button" class="btn btn-s" onclick="closeMatModal()">취소</button>
+      <button type="button" class="btn btn-p" id="btn-mat-confirm" disabled>연결</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /** 에너지절약설계기준 [별표5] 표면열전달저항 (㎡·K/W) */
+  const PART_TYPES = {
+    wall: {
+      label: '거실 외벽', short: '외벽',
+      ri: 0.11, ro: { direct: 0.043, indirect: 0.11 },
+      dualInterior: false,
+      roleHints: ['외단열', '외단열', '내단열', '내단열'],
+    },
+    wall_interior: {
+      label: '내벽', short: '내벽',
+      ri: 0.11, ro: null,
+      dualInterior: true,
+      roleHints: ['A실', 'A실', 'B실', '—'],
+    },
+    floor_bottom: {
+      label: '최하층 거실 바닥', short: '바닥',
+      ri: 0.086, ro: { direct: 0.043, indirect: 0.15 },
+      dualInterior: false,
+      roleHints: ['하부 단열', '하부 단열', '상부 마감', '—'],
+    },
+    roof: {
+      label: '최상층 지붕·반자', short: '지붕',
+      ri: 0.086, ro: { direct: 0.043, indirect: 0.086 },
+      dualInterior: false,
+      roleHints: ['외단열', '외단열', '내단열', '—'],
+    },
+    floor_between: {
+      label: '공동주택 층간 바닥', short: '층간바닥',
+      ri: 0.086, ro: null,
+      dualInterior: true,
+      roleHints: ['상부층', '상부층', '하부층', '—'],
+    },
+  };
+
+  const MATERIALS = [
+    { id: 'm1', name: '그라스울 판넬 (48kg/㎡)', lambda: 0.036 },
+    { id: 'm2', name: '미네랄울 보드 (60kg/㎡)', lambda: 0.035 },
+    { id: 'm3', name: '미네랄울 보드 (80kg/㎡)', lambda: 0.034 },
+    { id: 'm4', name: '석고보드', lambda: 0.18 },
+    { id: 'm5', name: '석고보드 12.5mm', lambda: 0.21 },
+  ];
+
+  /** role: panel | insul | finish — 마감재도 동일 DB(단열 스펙)에 등록 */
+  let INSULATION_SPECS = [
+    { id: 'is1', name: '48K 그라스울 판넬', role: 'panel', materialId: 'm1', lambda: 0.036 },
+    { id: 'is2', name: '60K 미네랄울', role: 'insul', materialId: 'm2', lambda: 0.035 },
+    { id: 'is3', name: '80K 미네랄울', role: 'insul', materialId: null, lambda: 0.034 },
+    { id: 'is-f1', name: '석고보드', role: 'finish', materialId: 'm4', lambda: 0.18 },
+    { id: 'is-f2', name: '석고보드(12.5)', role: 'finish', materialId: 'm5', lambda: 0.21 },
+    { id: 'is-f3', name: '도장층', role: 'finish', materialId: null, lambda: 0.5 },
+  ];
+
+  let FINISH_OPTIONS = [
+    {
+      id: 'gypsum95', title: '석고보드 9.5T 2ply',
+      layers: [
+        { specId: 'is-f1', thick: 9.5 },
+        { specId: 'is-f1', thick: 9.5 },
+      ]
+    },
+    {
+      id: 'gypsum125', title: '석고보드 12.5T 2ply',
+      layers: [
+        { specId: 'is-f2', thick: 12.5 },
+        { specId: 'is-f2', thick: 12.5 },
+      ]
+    },
+    {
+      id: 'paint', title: '도장 마감 (얇음)',
+      layers: [{ specId: 'is-f3', thick: 0.3 }]
+    },
+  ];
+
+  let editingFinishId = 'gypsum95';
+  let modalSpecId = null;
+  let modalMatId = null;
+
+  const PART_ROWS = [
+    { id: 'wall_ext', label: '외벽', partType: 'wall' },
+    { id: 'wall_int', label: '내벽', partType: 'wall_interior' },
+    { id: 'roof', label: '지붕', partType: 'roof' },
+    { id: 'floor_bottom', label: '바닥', partType: 'floor_bottom' },
+    { id: 'floor_between', label: '층간바닥', partType: 'floor_between' },
+  ];
+  const ZONES = [
+    { id: 'mid1', label: '중부1' }, { id: 'mid2', label: '중부2' },
+    { id: 'south', label: '남부' }, { id: 'jeju', label: '제주' },
+  ];
+  const LAYER_SLOTS = 4;
+
+  let INSULATION_PACKAGES = [
+    { id: 'ins-std', name: 'U-Standard 단열셋', code: 'INS-STD', cells: {} },
+    { id: 'ins-pre', name: 'U-Premium 단열셋', code: 'INS-PRE', cells: {} },
+  ];
+  const PLATFORMS = [
+    { id: 'u-std', name: 'U-Standard', insulationPackageId: 'ins-std' },
+    { id: 'u-pre', name: 'U-Premium', insulationPackageId: 'ins-pre' },
+  ];
+
+  let activePackageId = 'ins-std';
+  let activePartRow = 'wall_ext';
+  let activeZone = 'mid1';
+  let pkgPartType = 'wall';
+  let pkgExposure = 'direct';
+  let pkgLayers = emptyLayers();
+  let pkgFinishId = 'gypsum95';
+  let savedPkgState = '';
+
+  function emptyLayers() {
+    return Array.from({ length: LAYER_SLOTS }, () => ({ specId: '', lambda: '', thick: '' }));
+  }
+
+  function cellKey(partRowId, zoneId) { return partRowId + ':' + zoneId; }
+  function activePackage() { return INSULATION_PACKAGES.find(p => p.id === activePackageId); }
+
+  function defaultCell(partType) {
+    const cell = {
+      partType,
+      exposure: partType === 'floor_bottom' ? 'indirect' : 'direct',
+      finishId: 'gypsum95',
+      layers: emptyLayers(),
+    };
+    if (partType === 'wall') {
+      cell.layers[0] = { specId: 'is1', lambda: 0.036, thick: 75 };
+      cell.layers[1] = { specId: 'is2', lambda: 0.035, thick: 100 };
+    } else if (partType === 'wall_interior') {
+      cell.layers[0] = { specId: 'is2', lambda: 0.035, thick: 50 };
+    } else if (partType === 'roof') {
+      cell.layers[0] = { specId: 'is1', lambda: 0.036, thick: 100 };
+      cell.layers[1] = { specId: 'is2', lambda: 0.035, thick: 120 };
+    } else if (partType === 'floor_bottom') {
+      cell.layers[0] = { specId: 'is2', lambda: 0.035, thick: 80 };
+    } else if (partType === 'floor_between') {
+      cell.layers[0] = { specId: 'is2', lambda: 0.035, thick: 60 };
+    }
+    return cell;
+  }
+
+  function getCell(pkg, partRowId, zoneId) {
+    const k = cellKey(partRowId, zoneId);
+    if (!pkg.cells[k]) {
+      const row = PART_ROWS.find(r => r.id === partRowId);
+      pkg.cells[k] = defaultCell(row.partType);
+    }
+    return pkg.cells[k];
+  }
+
+  function seedPackage(pkg, variant) {
+    const wallThick = { mid1: 100, mid2: 100, south: 110, jeju: 130 };
+    PART_ROWS.forEach(row => {
+      ZONES.forEach(z => {
+        const c = getCell(pkg, row.id, z.id);
+        if (row.id === 'wall_ext') {
+          c.layers[0] = { specId: 'is1', lambda: 0.036, thick: 75 };
+          c.layers[1] = { specId: 'is2', lambda: 0.035, thick: wallThick[z.id] + (variant === 'pre' ? 20 : 0) };
+          c.exposure = 'direct';
+        }
+        if (variant === 'pre' && row.id === 'roof') {
+          c.layers[1].thick = (parseFloat(c.layers[1].thick) || 120) + 30;
+        }
+      });
+    });
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+
+  function persistEditorToCell() {
+    const pkg = activePackage();
+    if (!pkg || !activePartRow || !activeZone) return;
+    pkg.cells[cellKey(activePartRow, activeZone)] = {
+      partType: pkgPartType,
+      exposure: pkgExposure,
+      finishId: pkgFinishId,
+      layers: pkgLayers.map(L => ({ ...L })),
+    };
+  }
+
+  function loadActiveCellToEditor() {
+    const pkg = activePackage();
+    if (!pkg) return;
+    const cell = getCell(pkg, activePartRow, activeZone);
+    pkgPartType = cell.partType;
+    pkgExposure = cell.exposure || 'direct';
+    pkgLayers = cell.layers.map(L => ({ ...L }));
+    pkgFinishId = cell.finishId || 'gypsum95';
+    document.getElementById('pkg-exposure').value = pkgExposure;
+  }
+
+  function updateCellEditorHeader() {
+    const row = PART_ROWS.find(r => r.id === activePartRow);
+    const zone = ZONES.find(z => z.id === activeZone);
+    document.getElementById('cell-editor-title').textContent =
+      (row ? row.label : '') + ' · ' + (zone ? zone.label : '') + ' 편집';
+  }
+
+  function selectCell(partRowId, zoneId) {
+    persistEditorToCell();
+    activePartRow = partRowId;
+    activeZone = zoneId;
+    loadActiveCellToEditor();
+    updateCellEditorHeader();
+    refreshExposureUI();
+    document.getElementById('legal-surface-hint').innerHTML = buildLegalHint();
+    renderPackageMatrix();
+    renderPackageTable();
+  }
+
+  function selectPackage(id) {
+    persistEditorToCell();
+    activePackageId = id;
+    const pkg = activePackage();
+    if (!pkg) return;
+    document.getElementById('pkg-name').value = pkg.name;
+    document.getElementById('pkg-code').value = pkg.code;
+    renderPackageList();
+    renderPackageMatrix();
+    loadActiveCellToEditor();
+    updateCellEditorHeader();
+    refreshExposureUI();
+    document.getElementById('legal-surface-hint').innerHTML = buildLegalHint();
+    renderPackageTable();
+    syncPkgSave();
+  }
+
+  function onPkgMetaInput() {
+    const pkg = activePackage();
+    if (pkg) {
+      pkg.name = document.getElementById('pkg-name').value;
+      pkg.code = document.getElementById('pkg-code').value;
+      renderPackageList();
+    }
+    syncPkgSave();
+  }
+
+  function addInsulationPackage() {
+    persistEditorToCell();
+    const id = 'ins_' + Date.now();
+    INSULATION_PACKAGES.push({ id, name: '신규 단열 패키지', code: 'INS-NEW', cells: {} });
+    selectPackage(id);
+  }
+
+  function renderPackageList() {
+    document.getElementById('pkg-list').innerHTML = INSULATION_PACKAGES.map(p =>
+      '<div class="pkg-list-item ' + (p.id === activePackageId ? 'active' : '') + '" onclick="selectPackage(\'' + p.id + '\')">'
+      + '<div class="t">' + escHtml(p.name) + '</div>'
+      + '<div class="d">' + escHtml(p.code) + '</div></div>'
+    ).join('');
+  }
+
+  function buildStructureTxtForCell(cell) {
+    const bits = [];
+    (cell.layers || []).forEach(L => {
+      if (!L.specId || !L.thick) return;
+      const sp = specById(L.specId);
+      if (sp) bits.push(sp.name + ' ' + thickLabel(L.thick));
+    });
+    const fin = finishById(cell.finishId);
+    if (fin) bits.push(fin.title);
+    return bits.length ? bits.join(' + ') : '—';
+  }
+
+  function calcUForCell(cell) {
+    const p = PART_TYPES[cell.partType];
+    if (!p) return { u: null, rTotal: 0, rLayers: 0, rFinish: 0, surf: { top: { r: 0 }, bottom: { r: 0 } } };
+    const exposure = cell.exposure || 'direct';
+    let surf;
+    if (p.dualInterior) {
+      surf = {
+        top: { r: p.ri, label: '상부 실내표면 (Rᵢ=' + p.ri + ')' },
+        bottom: { r: p.ri, label: '하부 실내표면 (Rᵢ=' + p.ri + ')' },
+      };
+    } else {
+      const ro = p.ro[exposure];
+      const expLabel = exposure === 'direct' ? '외기 직접' : '외기 간접';
+      surf = {
+        top: { r: ro, label: '실외측 Rₒ=' + ro + ' (' + expLabel + ')' },
+        bottom: { r: p.ri, label: '실내측 Rᵢ=' + p.ri },
+      };
+    }
+    let r = surf.top.r;
+    let rLayers = 0;
+    (cell.layers || []).forEach(L => { rLayers += layerR(L.lambda, L.thick); });
+    r += rLayers;
+    let rFinish = 0;
+    const fin = finishById(cell.finishId);
+    if (fin) {
+      rFinish = fin.layers.reduce((s, fl) => s + finishLayerR(fl), 0);
+      r += rFinish;
+    }
+    r += surf.bottom.r;
+    return { u: r > 0 ? 1 / r : null, rTotal: r, rLayers, rFinish, surf };
+  }
+
+  function renderPackageMatrix() {
+    const pkg = activePackage();
+    const el = document.getElementById('pkg-matrix');
+    if (!pkg || !el) return;
+    let hdr = '<tr><th class="part-col">부위 \\ 지역</th>'
+      + ZONES.map(z => '<th>' + z.label + '</th>').join('') + '</tr>';
+    let body = PART_ROWS.map(row => {
+      const cells = ZONES.map(z => {
+        const c = getCell(pkg, row.id, z.id);
+        const res = calcUForCell(c);
+        const u = res.u != null ? roundU(res.u).toFixed(3) : '—';
+        const txt = buildStructureTxtForCell(c);
+        const short = txt.length > 32 ? txt.slice(0, 32) + '…' : txt;
+        const active = activePartRow === row.id && activeZone === z.id ? ' active' : '';
+        return '<td class="cell' + active + '" onclick="selectCell(\'' + row.id + '\',\'' + z.id + '\')">'
+          + '<div class="u-mini">U ' + u + '</div>'
+          + '<div class="struct-mini">' + escHtml(short) + '</div></td>';
+      }).join('');
+      return '<tr><th class="part-col">' + row.label + '</th>' + cells + '</tr>';
+    }).join('');
+    el.innerHTML = hdr + body;
+  }
+
+
+  function matById(id) { return MATERIALS.find(m => m.id === id); }
+  function specById(id) { return INSULATION_SPECS.find(s => s.id === id); }
+  function finishById(id) { return FINISH_OPTIONS.find(f => f.id === id); }
+
+  function specRoleLabel(role) {
+    if (role === 'panel') return '판넬';
+    if (role === 'insul') return '단열재';
+    if (role === 'finish') return '마감재';
+    return role;
+  }
+
+  function finishSpecsSorted() {
+    return INSULATION_SPECS
+      .filter(s => s.role === 'finish')
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  }
+
+  function layerLambda(L) {
+    if (L && L.specId) {
+      const sp = specById(L.specId);
+      if (sp && sp.lambda != null) return sp.lambda;
+    }
+    return parseFloat(L?.lambda) || 0;
+  }
+
+  function finishLayerR(L) {
+    return layerR(layerLambda(L), L.thick);
+  }
+
+  function finishSpecsOptionsHtml(selected) {
+    let h = '<option value="">— 선택 —</option>';
+    finishSpecsSorted().forEach(s => {
+      h += '<option value="' + s.id + '"' + (s.id === selected ? ' selected' : '') + '>' + escHtml(s.name) + '</option>';
+    });
+    return h;
+  }
+
+  /** 패키지 단열층용 — 마감재 제외, 이름 오름차순 */
+  function insulationSpecsForPackage() {
+    return INSULATION_SPECS
+      .filter(s => s.role === 'panel' || s.role === 'insul')
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  }
+
+  function specOptionsHtml(selected) {
+    let h = '<option value="">— 선택 —</option>';
+    insulationSpecsForPackage().forEach(s => {
+      h += `<option value="${s.id}" ${s.id === selected ? 'selected' : ''}>${s.name}</option>`;
+    });
+    return h;
+  }
+  function finishOptionsHtml(selected) {
+    return FINISH_OPTIONS.map(f =>
+      `<option value="${f.id}" ${f.id === selected ? 'selected' : ''}>${f.title}</option>`
+    ).join('');
+  }
+
+  function layerR(lambda, thickMm) {
+    const l = parseFloat(lambda);
+    const d = parseFloat(thickMm);
+    if (!l || l <= 0 || !d || d <= 0) return 0;
+    return (d / 1000) / l;
+  }
+
+  function partConfig() { return PART_TYPES[pkgPartType]; }
+
+  function getSurfaceResistances() {
+    const p = partConfig();
+    if (p.dualInterior) {
+      return {
+        top: { r: p.ri, label: '상부 실내표면열전달저항 (Rᵢ=' + p.ri + ')' },
+        bottom: { r: p.ri, label: '하부 실내표면열전달저항 (Rᵢ=' + p.ri + ')' },
+      };
+    }
+    const ro = p.ro[pkgExposure];
+    const expLabel = pkgExposure === 'direct' ? '외기 직접' : '외기 간접';
+    return {
+      top: { r: ro, label: '실외측 표면열전달저항 (Rₒ=' + ro + ', ' + expLabel + ')' },
+      bottom: { r: p.ri, label: '실내측 표면열전달저항 (Rᵢ=' + p.ri + ')' },
+    };
+  }
+
+  function buildLegalHint() {
+    const p = partConfig();
+    const surf = getSurfaceResistances();
+    if (p.dualInterior) {
+      return '<strong>' + p.label + '</strong> — 외기 면 없음. 상·하부 실내표면 각 Rᵢ=' + p.ri + ' (별표5).';
+    }
+    return '<strong>' + p.label + '</strong> — ' + surf.top.label + ' / ' + surf.bottom.label
+      + '. U=1/(Rₒ+Σd/λ+R마감+Rᵢ). 제출용 계산서는 [별표5] 필수.';
+  }
+
+  function roundU(u) { return Math.round(u * 1000) / 1000; }
+  function roleLabel(i) { return partConfig().roleHints[i] || '—'; }
+
+  function calcU() {
+    const surf = getSurfaceResistances();
+    let r = surf.top.r;
+    let rLayers = 0;
+    let rFinish = 0;
+    pkgLayers.forEach(L => { rLayers += layerR(L.lambda, L.thick); });
+    r += rLayers;
+    const fin = finishById(pkgFinishId);
+    if (fin) {
+      rFinish = fin.layers.reduce((s, fl) => s + finishLayerR(fl), 0);
+      r += rFinish;
+    }
+    r += surf.bottom.r;
+    return { u: r > 0 ? 1 / r : null, rTotal: r, surf, rLayers, rFinish };
+  }
+
+  /** 두께 표기: mm 입력값 그대로 T (75mm → 75T). 계산은 항상 mm 기준 */
+  function thickLabel(mm) {
+    const d = parseFloat(mm);
+    if (!d) return '';
+    return `${d}T`;
+  }
+
+  function fmtR(r) {
+    return r > 0 ? r.toFixed(3) : '—';
+  }
+
+  function buildStructureTxt() {
+    const bits = [];
+    pkgLayers.forEach(L => {
+      if (!L.specId || !L.thick) return;
+      const sp = specById(L.specId);
+      if (sp) bits.push(`${sp.name} ${thickLabel(L.thick)}`);
+    });
+    const fin = finishById(pkgFinishId);
+    if (fin) bits.push(fin.title);
+    return bits.length ? bits.join(' + ') : '—';
+  }
+
+  function refreshExposureUI() {
+    const p = partConfig();
+    document.getElementById('field-exposure').style.display = p.ro ? '' : 'none';
+    if (p.ro) {
+      document.getElementById('opt-direct').textContent = '외기 직접 — Rₒ ' + p.ro.direct;
+      document.getElementById('opt-indirect').textContent = '외기 간접 — Rₒ ' + p.ro.indirect;
+    }
+    document.getElementById('u-part-label').textContent = p.short + ' 열관류율 U';
+    document.getElementById('legal-surface-hint').innerHTML = buildLegalHint();
+  }
+  function onExposureChange() {
+    pkgExposure = document.getElementById('pkg-exposure').value;
+    document.getElementById('legal-surface-hint').innerHTML = buildLegalHint();
+    renderPackageTable();
+  }
+
+  function renderPackageTable() {
+    const fin = finishById(pkgFinishId);
+    const surf = getSurfaceResistances();
+    const rFinish = fin ? fin.layers.reduce((s, fl) => s + finishLayerR(fl), 0) : 0;
+    let html = '';
+    html += '<tr class="surface"><td class="col-no">—</td><td class="col-role">표면</td>'
+      + '<td colspan="2"><input readonly value="' + surf.top.label + '"></td>'
+      + '<td></td><td class="col-r"><input readonly value="' + fmtR(surf.top.r) + '"></td></tr>';
+
+    for (let i = 0; i < LAYER_SLOTS; i++) {
+      const L = pkgLayers[i];
+      const rL = layerR(L.lambda, L.thick);
+      html += '<tr><td class="col-no">' + (i + 1) + '</td><td class="col-role">' + roleLabel(i) + '</td>'
+        + '<td><select onchange="onSpecPick(' + i + ', this.value)">' + specOptionsHtml(L.specId) + '</select></td>'
+        + '<td><input type="number" step="0.001" value="' + L.lambda + '" onchange="onLayerField(' + i + ',\'lambda\',this.value)"></td>'
+        + '<td><input type="number" step="1" value="' + L.thick + '" onchange="onLayerField(' + i + ',\'thick\',this.value)"></td>'
+        + '<td class="col-r"><input readonly value="' + fmtR(rL) + '"></td></tr>';
+    }
+
+    html += '<tr class="finish-row"><td class="col-no">—</td><td class="col-role">마감</td>'
+      + '<td colspan="2"><select onchange="onFinishPick(this.value)">' + finishOptionsHtml(pkgFinishId) + '</select></td>'
+      + '<td><input readonly value="' + (fin ? fin.layers.length + '층' : '—') + '"></td>'
+      + '<td class="col-r"><input readonly value="' + fmtR(rFinish) + '"></td></tr>';
+
+    html += '<tr class="surface"><td class="col-no">—</td><td class="col-role">표면</td>'
+      + '<td colspan="2"><input readonly value="' + surf.bottom.label + '"></td>'
+      + '<td></td><td class="col-r"><input readonly value="' + fmtR(surf.bottom.r) + '"></td></tr>';
+
+    document.getElementById('layer-tbody').innerHTML = html;
+
+    const { u, rTotal, rLayers, rFinish: rFin, surf: srf } = calcU();
+    const rSurf = srf.top.r + srf.bottom.r;
+    document.getElementById('structure-txt').textContent = buildStructureTxt();
+    if (u != null) {
+      document.getElementById('u-val').textContent = roundU(u).toFixed(3);
+      const thickSum = pkgLayers.reduce((s, L) => s + (parseFloat(L.thick) || 0), 0)
+        + (fin ? fin.layers.reduce((s, fl) => s + (parseFloat(fl.thick) || 0), 0) : 0);
+      document.getElementById('u-breakdown').textContent =
+        'R=' + rTotal.toFixed(3) + ' (표면' + rSurf.toFixed(3) + '+단열' + rLayers.toFixed(3) + '+마감' + rFin.toFixed(3) + ') · ' + thickSum + 'mm';
+    } else {
+      document.getElementById('u-val').textContent = '—';
+      document.getElementById('u-breakdown').textContent = '층을 입력하세요';
+    }
+    persistEditorToCell();
+    renderPackageMatrix();
+    syncPkgSave();
+  }
+
+  function onSpecPick(i, specId) {
+    pkgLayers[i].specId = specId;
+    const sp = specById(specId);
+    if (sp) {
+      pkgLayers[i].lambda = sp.lambda ?? '';
+      if (!pkgLayers[i].thick) pkgLayers[i].thick = sp.role === 'panel' ? 75 : 100;
+    } else {
+      pkgLayers[i].lambda = '';
+      pkgLayers[i].thick = '';
+    }
+    renderPackageTable();
+  }
+  function onLayerField(i, key, val) {
+    pkgLayers[i][key] = val;
+    renderPackageTable();
+  }
+  function onFinishPick(id) {
+    pkgFinishId = id;
+    renderPackageTable();
+  }
+
+  function getPkgState() {
+    persistEditorToCell();
+    const pkg = activePackage();
+    return pkg ? JSON.stringify({ id: pkg.id, name: pkg.name, code: pkg.code, cells: pkg.cells }) : '';
+  }
+  function syncPkgSave() {
+    document.getElementById('btn-pkg-save').disabled = getPkgState() === savedPkgState;
+  }
+  document.getElementById('btn-pkg-save').onclick = () => {
+    persistEditorToCell();
+    const pkg = activePackage();
+    if (pkg) {
+      pkg.name = document.getElementById('pkg-name').value;
+      pkg.code = document.getElementById('pkg-code').value;
+    }
+    savedPkgState = getPkgState();
+    syncPkgSave();
+    alert('목업 저장: ' + (pkg ? pkg.name : ''));
+    renderPackageList();
+    renderPlatforms();
+  };
+
+  // ── 스펙 ──
+  function specsSortedForTable() {
+    const order = { panel: 0, insul: 1, finish: 2 };
+    return INSULATION_SPECS.slice().sort((a, b) => {
+      const d = (order[a.role] ?? 9) - (order[b.role] ?? 9);
+      if (d !== 0) return d;
+      return a.name.localeCompare(b.name, 'ko');
+    });
+  }
+
+  function renderSpecs() {
+    document.getElementById('spec-tbody').innerHTML = specsSortedForTable().map(s => {
+      const m = s.materialId ? matById(s.materialId) : null;
+      const matCell = m
+        ? `<span class="link-mat" onclick="openMatModal('${s.id}')">${m.name}</span>`
+        : `<span class="link-mat muted" onclick="openMatModal('${s.id}')"><i class="fas fa-link"></i> 연결</span>`;
+      return `<tr>
+        <td><strong>${s.name}</strong></td>
+        <td>${specRoleLabel(s.role)}</td>
+        <td>${matCell}</td>
+        <td>${s.lambda ?? '—'}</td>
+        <td><button type="button" class="btn btn-g btn-xs" onclick="openMatModal('${s.id}')">연결</button></td>
+      </tr>`;
+    }).join('');
+  }
+  function openMatModal(specId) {
+    modalSpecId = specId;
+    modalMatId = specById(specId)?.materialId || null;
+    document.getElementById('modal-mat-title').textContent = '자재 연결 — ' + (specById(specId)?.name || '');
+    document.getElementById('mat-list').innerHTML = MATERIALS.map(m => `
+      <div class="mat-row ${modalMatId === m.id ? 'sel' : ''}" onclick="pickMat('${m.id}')">
+        <strong>${m.name}</strong><div style="font-size:11px;color:var(--gray-500)">λ ${m.lambda}</div>
+      </div>`).join('');
+    document.getElementById('btn-mat-confirm').disabled = !modalMatId;
+    document.getElementById('modal-mat').classList.add('open');
+  }
+  function pickMat(id) {
+    modalMatId = id;
+    document.querySelectorAll('.mat-row').forEach((row, idx) => {
+      row.classList.toggle('sel', MATERIALS[idx]?.id === id);
+    });
+    document.getElementById('btn-mat-confirm').disabled = false;
+  }
+  function closeMatModal() { document.getElementById('modal-mat').classList.remove('open'); }
+  document.getElementById('btn-mat-confirm').onclick = () => {
+    const sp = specById(modalSpecId);
+    const m = matById(modalMatId);
+    if (sp && m) { sp.materialId = m.id; sp.lambda = m.lambda; }
+    closeMatModal();
+    renderSpecs();
+    renderFinishPanel();
+    renderPackageTable();
+  };
+
+  // ── 실내 마감 편집 ──
+  function renderFinishPanel() {
+    document.getElementById('finish-list').innerHTML = FINISH_OPTIONS.map(f => `
+      <div class="finish-list-item ${editingFinishId === f.id ? 'active' : ''}" onclick="editFinish('${f.id}')">
+        <div class="t">${f.title}</div>
+        <div class="d">${f.layers.length}층 · U 기여 R≈${f.layers.reduce((s,l)=>s+finishLayerR(l),0).toFixed(3)}</div>
+      </div>`).join('');
+
+    const f = finishById(editingFinishId);
+    if (!f) {
+      document.getElementById('finish-editor').innerHTML = '<p class="note">옵션을 선택하세요.</p>';
+      return;
+    }
+    const finishSpecs = finishSpecsSorted();
+    if (!finishSpecs.length) {
+      document.getElementById('finish-editor').innerHTML = '<p class="note">① 단열 스펙에 <strong>마감재</strong> 분류 스펙을 먼저 등록하세요.</p>';
+      return;
+    }
+    let rows = f.layers.map((L, i) => {
+      const lam = layerLambda(L);
+      return `<tr>
+        <td class="col-no">${i + 1}</td>
+        <td><select onchange="onFinishSpecPick(${i}, this.value)">${finishSpecsOptionsHtml(L.specId)}</select></td>
+        <td><input type="number" step="0.001" readonly value="${lam || ''}" title="단열 스펙 λ"></td>
+        <td><input type="number" step="0.1" value="${L.thick}" onchange="onFinishLayer(${i},'thick',this.value)"></td>
+        <td><button type="button" class="btn btn-g btn-xs" onclick="removeFinishLayer(${i})"><i class="fas fa-times"></i></button></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('finish-editor').innerHTML = `
+      <h4>${f.title}</h4>
+      <p class="meta">소재는 단열 스펙(마감재)에서 선택 · λ는 스펙 기준 자동 · 두께(mm)만 입력</p>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:600;color:var(--gray-500)">옵션명</label>
+        <input type="text" value="${f.title}" style="width:100%;padding:8px;border:1px solid var(--gray-300);border-radius:6px;margin-top:4px"
+          onchange="renameFinish('${f.id}', this.value)">
+      </div>
+      <table class="layer-table">
+        <thead><tr><th class="col-no">#</th><th>마감 스펙</th><th class="col-lambda">λ (자동)</th><th class="col-thick">mm</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <button type="button" class="btn btn-s btn-xs" style="margin-top:8px" onclick="addFinishLayer()"><i class="fas fa-plus"></i> 레이어 추가</button>`;
+  }
+  function editFinish(id) { editingFinishId = id; renderFinishPanel(); renderPackageTable(); }
+  function onFinishSpecPick(i, specId) {
+    const f = finishById(editingFinishId);
+    if (!f || !f.layers[i]) return;
+    f.layers[i].specId = specId;
+    renderFinishPanel();
+    renderPackageTable();
+  }
+  function onFinishLayer(i, key, val) {
+    const f = finishById(editingFinishId);
+    if (f && key === 'thick') { f.layers[i].thick = parseFloat(val) || 0; renderFinishPanel(); renderPackageTable(); }
+  }
+  function removeFinishLayer(i) {
+    finishById(editingFinishId)?.layers.splice(i, 1);
+    renderFinishPanel(); renderPackageTable();
+  }
+  function addFinishLayer() {
+    const specs = finishSpecsSorted();
+    if (!specs.length) return;
+    finishById(editingFinishId)?.layers.push({ specId: specs[0].id, thick: 9.5 });
+    renderFinishPanel(); renderPackageTable();
+  }
+  function renameFinish(id, title) {
+    const f = finishById(id);
+    if (f) { f.title = title; renderFinishPanel(); renderPackageTable(); }
+  }
+  function addFinishOption() {
+    const specs = finishSpecsSorted();
+    if (!specs.length) {
+      alert('① 단열 스펙에 마감재 분류 스펙을 먼저 등록하세요.');
+      return;
+    }
+    const id = 'fin_' + Date.now();
+    FINISH_OPTIONS.push({ id, title: '새 마감 옵션', layers: [{ specId: specs[0].id, thick: 9.5 }] });
+    editingFinishId = id;
+    renderFinishPanel();
+  }
+
+  function setPlatformPkg(platformId, pkgId) {
+    const p = PLATFORMS.find(x => x.id === platformId);
+    if (p) p.insulationPackageId = pkgId;
+  }
+
+  function renderPlatforms() {
+    const hdr = '<tr><th>플랫폼</th><th>단열 패키지</th><th>구성</th></tr>';
+    const body = PLATFORMS.map(p => {
+      const opts = INSULATION_PACKAGES.map(pk =>
+        '<option value="' + pk.id + '"' + (p.insulationPackageId === pk.id ? ' selected' : '') + '>' + escHtml(pk.name) + '</option>'
+      ).join('');
+      const pkg = INSULATION_PACKAGES.find(pk => pk.id === p.insulationPackageId);
+      const note = pkg ? '5부위 × 4지역' : '—';
+      return '<tr><td><strong>' + escHtml(p.name) + '</strong></td>'
+        + '<td><select onchange="setPlatformPkg(\'' + p.id + '\', this.value)">' + opts + '</select></td>'
+        + '<td style="color:var(--gray-500);font-size:12px">' + note + '</td></tr>';
+    }).join('');
+    document.getElementById('platform-matrix').innerHTML = hdr + body;
+  }
+
+  document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  seedPackage(INSULATION_PACKAGES[0], 'std');
+  seedPackage(INSULATION_PACKAGES[1], 'pre');
+  selectPackage('ins-std');
+  savedPkgState = getPkgState();
+  renderSpecs();
+  renderFinishPanel();
+  renderPlatforms();
+</script>
+</body>
+</html>

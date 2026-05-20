@@ -325,6 +325,18 @@ body {
   color: #fff;
 }
 .btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:disabled,
+.btn-primary[disabled] {
+  background: var(--gray-200);
+  color: var(--gray-400);
+  border: 1px solid var(--gray-200);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-primary:disabled:hover,
+.btn-primary[disabled]:hover {
+  background: var(--gray-200);
+}
 
 .btn-secondary {
   background: #fff;
@@ -1120,6 +1132,141 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   font-size: 14px;
   font-weight: 500;
   color: var(--gray-800);
+}
+
+.ld-page-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.ld-section {
+  margin-top: 0;
+}
+
+.ld-section-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 16px 20px 0;
+}
+
+.ld-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-800);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ld-section-hint {
+  font-size: 12px;
+  color: var(--gray-400);
+  font-weight: 400;
+}
+
+.ld-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ld-section-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.ld-narrative-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ld-narrative-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+
+.ld-narrative-textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.ld-narrative-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+}
+
+.ld-narrative-textarea::placeholder {
+  color: var(--gray-400);
+}
+
+.lds-section-card .lds-wrap {
+  margin-top: 0;
+}
+
+.lds-section-card .card-body {
+  padding-top: 8px;
+}
+
+/* 구조·단열 통합 관리 */
+.eng-mgmt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.eng-mgmt-card--filled {
+  border-color: #bfdbfe;
+}
+
+.eng-mgmt-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.eng-mgmt-card-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.eng-mgmt-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.eng-mgmt-id {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+.eng-mgmt-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .ldic-desc {
