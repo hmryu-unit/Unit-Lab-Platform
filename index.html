@@ -275,7 +275,7 @@
           <div class="card-b" style="padding:0">
             <table class="spec-table">
               <thead>
-                <tr><th>스펙명</th><th>분류</th><th>연결 자재</th><th>λ (W/m·K)</th><th>관리</th></tr>
+                <tr><th>스펙명</th><th>분류</th><th>방화등급</th><th>연결 자재</th><th>λ (W/m·K)</th><th>관리</th></tr>
               </thead>
               <tbody id="insul-spec-tbody"></tbody>
             </table>
@@ -1373,6 +1373,15 @@
       <div class="form-group">
         <label class="form-label">열전도율 λ (W/m·K)</label>
         <input type="number" step="0.001" class="form-control" id="insul-spec-lambda" placeholder="0.036">
+      </div>
+      <div class="form-group">
+        <label class="form-label">방화등급 <span style="font-weight:400;color:var(--gray-400)">(선택)</span></label>
+        <select class="form-control" id="insul-spec-fire-rating">
+          <option value="">— 미지정 —</option>
+          <option value="불연">불연 (KS F ISO 1182)</option>
+          <option value="준불연">준불연 (KS F 8414)</option>
+          <option value="난연">난연 (KS F 2271)</option>
+        </select>
       </div>
     </div>
     <div class="modal-footer">

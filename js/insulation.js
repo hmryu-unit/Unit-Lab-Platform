@@ -182,12 +182,12 @@ const Insulation = (function () {
   function seedIfEmpty() {
     if (data.specs.length) return;
     data.specs = [
-      { id: 'is1', name: '48K 그라스울 판넬', role: 'panel', material_id: null, lambda: 0.036 },
-      { id: 'is2', name: '60K 미네랄울', role: 'insul', material_id: null, lambda: 0.035 },
-      { id: 'is3', name: '80K 미네랄울', role: 'insul', material_id: null, lambda: 0.034 },
-      { id: 'is-f1', name: '석고보드', role: 'finish', material_id: null, lambda: 0.18 },
-      { id: 'is-f2', name: '석고보드(12.5)', role: 'finish', material_id: null, lambda: 0.21 },
-      { id: 'is-f3', name: '도장층', role: 'finish', material_id: null, lambda: 0.5 },
+      { id: 'is1', name: '48K 그라스울 판넬', role: 'panel', material_id: null, lambda: 0.036, fireRating: '준불연' },
+      { id: 'is2', name: '60K 미네랄울', role: 'insul', material_id: null, lambda: 0.035, fireRating: '불연' },
+      { id: 'is3', name: '80K 미네랄울', role: 'insul', material_id: null, lambda: 0.034, fireRating: '불연' },
+      { id: 'is-f1', name: '석고보드', role: 'finish', material_id: null, lambda: 0.18, fireRating: '불연' },
+      { id: 'is-f2', name: '석고보드(12.5)', role: 'finish', material_id: null, lambda: 0.21, fireRating: '불연' },
+      { id: 'is-f3', name: '도장층', role: 'finish', material_id: null, lambda: 0.5, fireRating: '' },
     ];
     data.finishOptions = [
       { id: 'gypsum95', title: '석고보드 9.5T 2ply', layers: [{ specId: 'is-f1', thick: 9.5 }, { specId: 'is-f1', thick: 9.5 }] },
@@ -704,9 +704,13 @@ const Insulation = (function () {
       const matCell = m
         ? `<span class="insul-link-mat" onclick="Insulation.openSpecMatModal('${escHtml(s.id)}')">${escHtml(m.name)}</span>`
         : `<span class="insul-link-mat muted" onclick="Insulation.openSpecMatModal('${escHtml(s.id)}')"><i class="fas fa-link"></i> 연결</span>`;
+      const fireHtml = s.fireRating
+        ? `<span class="fire-badge fire-${s.fireRating}">${escHtml(s.fireRating)}</span>`
+        : '<span style="color:var(--gray-300)">—</span>';
       return `<tr>
         <td><strong>${escHtml(s.name)}</strong></td>
         <td>${specRoleLabel(s.role)}</td>
+        <td>${fireHtml}</td>
         <td>${matCell}</td>
         <td>${s.lambda ?? '—'}</td>
         <td>
@@ -714,7 +718,7 @@ const Insulation = (function () {
           <button class="btn btn-sm btn-ghost" onclick="Insulation.deleteSpec('${escHtml(s.id)}','${escHtml(s.name)}')" title="삭제"><i class="fas fa-trash"></i></button>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:24px">등록된 단열 스펙이 없습니다</td></tr>';
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:24px">등록된 단열 스펙이 없습니다</td></tr>';
   }
 
   async function renderPackagesPage() {
@@ -844,6 +848,7 @@ const Insulation = (function () {
     document.getElementById('insul-spec-name').value = spec?.name || '';
     document.getElementById('insul-spec-role').value = spec?.role || 'insul';
     document.getElementById('insul-spec-lambda').value = spec?.lambda ?? '';
+    document.getElementById('insul-spec-fire-rating').value = spec?.fireRating || '';
     document.getElementById('insul-spec-id').disabled = !!spec;
     openModal('insul-spec-modal');
   }
@@ -856,11 +861,13 @@ const Insulation = (function () {
     if (!name) { showToast('스펙명을 입력하세요', 'error'); return; }
     if (!lambda && lambda !== 0) { showToast('열전도율 λ를 입력하세요', 'error'); return; }
     const existing = specById(modalSpecId || id);
+    const fireRating = document.getElementById('insul-spec-fire-rating').value;
     const row = {
       id: existing?.id || id,
       name,
       role,
       lambda,
+      fireRating: fireRating || '',
       material_id: existing?.material_id || null,
     };
     if (existing) {
