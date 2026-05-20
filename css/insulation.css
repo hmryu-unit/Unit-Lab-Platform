@@ -22,8 +22,9 @@
 .insul-layer-table tr.surface td { background: #f0fdf4; }
 .insul-layer-table tr.finish-row td { background: #fffbeb; }
 
-.insul-pkg-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+.insul-pkg-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; min-width: 0; }
 @media (max-width: 900px) { .insul-pkg-layout { grid-template-columns: 1fr; } }
+.insul-pkg-layout > .card { min-width: 0; overflow-x: auto; }
 .insul-pkg-list { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; background: #fff; }
 .insul-pkg-list-item { padding: 12px 14px; border-bottom: 1px solid var(--gray-100); cursor: pointer; }
 .insul-pkg-list-item:hover { background: var(--gray-50); }
