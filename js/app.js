@@ -208,11 +208,34 @@ function categoryBadge(c) {
   return `<span class="badge ${colors[c]||'badge-gray'}">${escHtml(c)}</span>`;
 }
 
-function confirmDelete(msg, onOk) {
-  document.getElementById('confirm-message').textContent = msg;
+function openConfirmModal({ title, message, okLabel = '확인', okClass = 'btn btn-danger', warnText = null, onOk }) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  const warnEl = document.getElementById('confirm-warn');
+  const warnTextEl = document.getElementById('confirm-warn-text');
+  if (warnText) {
+    warnEl.hidden = false;
+    warnTextEl.textContent = warnText;
+  } else {
+    warnEl.hidden = true;
+    warnTextEl.textContent = '';
+  }
   const btn = document.getElementById('confirm-ok-btn');
+  btn.className = okClass;
+  btn.textContent = okLabel;
   btn.onclick = () => { closeModal('confirm-modal'); onOk(); };
   openModal('confirm-modal');
+}
+
+function confirmDelete(msg, onOk) {
+  openConfirmModal({
+    title: '⚠️ 삭제 확인',
+    message: msg,
+    okLabel: '삭제',
+    okClass: 'btn btn-danger',
+    warnText: '삭제 후 되돌리기 불가',
+    onOk,
+  });
 }
 
 function escHtml(s) {
@@ -244,6 +267,34 @@ function serializeSlotDesc(desc, attrs) {
   const hasAttrs  = attrs && Object.keys(attrs).length > 0;
   if (!hasAttrs) return cleanDesc;
   return cleanDesc + ATTRS_SEP + JSON.stringify(attrs);
+}
+
+/** 스펙 관리 등 — 설명·유형 속성을 읽기 쉬운 서브라인 HTML로 변환 */
+function renderSlotMetaSubline(sl) {
+  const { desc, attrs } = parseSlotDesc(sl.description);
+  const parts = [];
+  const cleanDesc = (desc || '').trim();
+  if (cleanDesc) {
+    parts.push(`<div class="slot-row-desc">${escHtml(cleanDesc)}</div>`);
+  }
+
+  const attrDefs = getAttrDefs(sl.slot_type);
+  const keys = attrDefs.length
+    ? attrDefs.map(d => d.value).filter(k => attrs[k] != null && attrs[k] !== '')
+    : Object.keys(attrs).filter(k => attrs[k] != null && attrs[k] !== '');
+
+  if (keys.length) {
+    const chips = keys.map(key => {
+      const def = attrDefs.find(d => d.value === key);
+      const label = def?.label || key;
+      const { unit } = _parseAttrUnit(def?.color || '');
+      const unitSuffix = unit ? ` ${unit}` : '';
+      return `<span class="slot-row-attr-chip">${escHtml(label)}: <strong>${escHtml(String(attrs[key]))}${escHtml(unitSuffix)}</strong></span>`;
+    }).join('');
+    parts.push(`<div class="slot-row-attrs">${chips}</div>`);
+  }
+
+  return parts.join('');
 }
 
 /** State.enums에서 특정 slot_type의 속성 정의 목록 반환
@@ -894,8 +945,9 @@ function renderBrandManageSection() {
             }).join('');
 
         return `
-          <div class="bm-card" data-id="${escHtml(e.id)}" style="border-left:4px solid ${escHtml(color)}">
-            <div class="bm-card-head" style="background:${escHtml(color)}12">
+          <div class="bm-card" data-id="${escHtml(e.id)}" style="--bm-color:${escHtml(color)}">
+            <div class="bm-card-head">
+              <span class="bm-card-accent" aria-hidden="true"></span>
               <span class="bm-drag" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical"></i></span>
               <span class="bm-card-icon">${icon}</span>
               <span class="bm-card-name" style="color:${escHtml(color)}">${escHtml(e.label || e.value)}</span>
@@ -929,6 +981,7 @@ function renderBrandManageSection() {
     makeSortable(row, {
       itemSelector: '.bm-card[data-id]',
       handleSelector: '.bm-drag',
+      horizontal: true,
       getId: el => el.dataset.id,
       onReorder: async (orderedIds) => {
         await Promise.all(orderedIds.map((id, i) => {
@@ -3252,6 +3305,21 @@ function deleteGrade(setId, name) {
 // ===================================================
 let slotFilterText = '', slotFilterSet = '', slotFilterType = '';
 
+/** 패키지(등급) × 항목 매트릭스에 배치된 스펙인지 */
+function isSlotMatrixPlaced(slotId) {
+  return State.slotAssignments.some(a => a.slot_id === slotId);
+}
+
+/** 배치된 스펙을 위로, 미배치는 맨 아래 — 동일 그룹 내 이름순 유지 */
+function sortSlotsPlacedFirst(slots) {
+  return slots.slice().sort((a, b) => {
+    const aPlaced = isSlotMatrixPlaced(a.id);
+    const bPlaced = isSlotMatrixPlaced(b.id);
+    if (aPlaced !== bPlaced) return aPlaced ? -1 : 1;
+    return (a.name || '').localeCompare(b.name || '', 'ko');
+  });
+}
+
 async function renderSlots() {
   await loadAll();
   renderSlotTable();
@@ -3348,10 +3416,14 @@ function renderSlotTable() {
         : '';
 
     // 열 순서: 유형 - 스펙명 - 대상 패키지 - 항목 - 연결 자재 - 관리
-    return `<tr>
+    const placed = assigns.length > 0;
+    const metaHtml = renderSlotMetaSubline(sl);
+
+    return `<tr class="${placed ? '' : 'slot-row--unplaced'}">
       <td>${categoryBadge(sl.slot_type||'기타')}</td>
-      <td style="font-weight:600">${escHtml(sl.name)}
-        ${sl.description ? `<div style="font-size:11px;color:#9ca3af;font-weight:400;margin-top:2px">${escHtml(sl.description)}</div>` : ''}
+      <td class="slot-row-name">
+        <div class="slot-row-title">${escHtml(sl.name)}</div>
+        ${metaHtml}
       </td>
       <td><div class="slot-ref-wrap">${pkgCell}</div></td>
       <td><div class="slot-ref-wrap">${itemCell}</div></td>
@@ -3408,7 +3480,7 @@ function renderSlotTable() {
                 <th>관리</th>
               </tr>
             </thead>
-            <tbody>${slots.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko')).map(_slotRow).join('')}</tbody>
+            <tbody>${sortSlotsPlacedFirst(slots).map(_slotRow).join('')}</tbody>
           </table>
         </div>
       </div>`;
@@ -3701,11 +3773,14 @@ function renderMaterialTable() {
       <td style="font-size:12px;color:#6b7280">${escHtml(m.supplier||'-')}</td>
       <td>${statusBadge(m.status)}</td>
       <td>
-        <div style="display:flex;gap:4px">
-          <button class="btn btn-sm btn-secondary" onclick="editMaterial('${escHtml(m.id)}')">
+        <div class="mat-row-actions">
+          <button class="btn btn-sm btn-secondary" onclick="editMaterial('${escHtml(m.id)}')" title="수정">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn btn-sm btn-ghost" style="color:#e02424" onclick="deleteMaterial('${escHtml(m.id)}','${escHtml(m.name)}')">
+          ${(m.status !== 'inactive' && m.status !== 'discontinued')
+            ? `<button class="btn btn-sm btn-ghost mat-action-deactivate" onclick="deactivateMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="비활성화"><i class="fas fa-ban"></i></button>`
+            : ''}
+          <button class="btn btn-sm btn-ghost mat-action-delete" onclick="deleteMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="삭제">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -4019,6 +4094,33 @@ function quickReplaceMaterial(matId) {
   navigate('materials');
 }
 
+function deactivateMaterial(matId, name) {
+  const item = State.materials.find(m => m.id === matId);
+  if (!item) return;
+  if (item.status === 'inactive' || item.status === 'discontinued') return;
+
+  const linked = State.slotMaterials.filter(sm => sm.material_id === matId);
+
+  openConfirmModal({
+    title: '비활성화 확인',
+    message: `자재 "${name}"을(를) 비활성화하시겠습니까?`,
+    okLabel: '비활성화',
+    okClass: 'btn btn-secondary',
+    warnText: linked.length > 0
+      ? `연결된 스펙 ${linked.length}개에 영향을 줄 수 있습니다. 수정 화면에서 다시 활성화할 수 있습니다.`
+      : '수정 화면에서 다시 활성화할 수 있습니다.',
+    onOk: async () => {
+      try {
+        const payload = { ...item, status: 'inactive' };
+        await API.put('materials', matId, payload);
+        await logChange('material', matId, name, 'update', item, payload, '자재 비활성화');
+        showToast('자재가 비활성화되었습니다');
+        await renderMaterials();
+      } catch (e) { showToast('비활성화 실패: ' + e.message, 'error'); }
+    },
+  });
+}
+
 function deleteMaterial(matId, name) {
   const item = State.materials.find(m => m.id === matId);
   if (!item) return;
@@ -4043,8 +4145,9 @@ async function renderSlotMaterials() {
   const container = document.getElementById('slot-materials-container');
   if (!container) return;
 
-  // ── ① 비활성화 자재 연결 목록 ──
+  // ── ① 비활성화 자재 연결 목록 (매트릭스에 배치된 스펙만) ──
   const discItems = State.slotMaterials
+    .filter(sm => isSlotMatrixPlaced(sm.slot_id))
     .filter(sm => { const s = State.materials.find(m => m.id === sm.material_id)?.status; return s === 'inactive' || s === 'discontinued'; })
     .map(sm => ({
       sm,
@@ -4052,8 +4155,9 @@ async function renderSlotMaterials() {
       mat:     State.materials.find(m => m.id === sm.material_id),
     }));
 
-  // ── ② 미연결 스펙 목록 ──
+  // ── ② 미연결 스펙 목록 (배치된 스펙 중 자재만 미연결) ──
   const unlinkedItems = State.slots
+    .filter(sl => isSlotMatrixPlaced(sl.id))
     .filter(sl => !State.slotMaterials.some(sm => sm.slot_id === sl.id))
     .map(sl => ({
       sl,
@@ -4158,7 +4262,7 @@ async function renderSlotMaterials() {
         <span class="sml-block-icon sml-block-icon--unlinked"><i class="fas fa-unlink"></i></span>
         <div>
           <div class="sml-block-title">자재 미연결</div>
-          <div class="sml-block-desc">아직 자재가 연결되지 않은 스펙입니다</div>
+          <div class="sml-block-desc">패키지·항목에 배치된 스펙 중 자재가 아직 연결되지 않은 항목입니다</div>
         </div>
         <span class="sml-block-badge sml-block-badge--unlinked">${unlinkedItems.length}건</span>
       </div>

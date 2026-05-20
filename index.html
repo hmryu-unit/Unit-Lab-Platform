@@ -1071,18 +1071,19 @@
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
-      <span class="modal-title">⚠️ 삭제 확인</span>
+      <span class="modal-title" id="confirm-title">확인</span>
       <button class="modal-close" onclick="closeModal('confirm-modal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
       <p id="confirm-message" style="font-size:14px;color:#374151;line-height:1.6"></p>
-      <div class="confirm-no-undo">
-        <i class="fas fa-exclamation-triangle"></i> 삭제 후 되돌리기 불가
+      <div class="confirm-warn" id="confirm-warn" hidden>
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="confirm-warn-text"></span>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">취소</button>
-      <button class="btn btn-danger" id="confirm-ok-btn">삭제</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">확인</button>
     </div>
   </div>
 </div>

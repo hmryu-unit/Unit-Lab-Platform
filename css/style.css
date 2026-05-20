@@ -226,10 +226,11 @@ body {
   box-shadow: 0 2px 8px rgba(59,130,246,0.3);
 }
 
-/* ── 삭제 확인 팝업 — 되돌리기 불가 경고 ── */
+/* ── 확인 팝업 — 보조 경고 ── */
+.confirm-warn,
 .confirm-no-undo {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   margin-top: 10px;
   padding: 7px 12px;
@@ -239,6 +240,14 @@ body {
   font-size: 12px;
   font-weight: 600;
   color: #c2410c;
+  line-height: 1.45;
+}
+.confirm-warn[hidden] {
+  display: none !important;
+}
+.confirm-warn i {
+  margin-top: 1px;
+  flex-shrink: 0;
 }
 
 .header-badge {
@@ -2427,6 +2436,25 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 .mat-thumb:hover { opacity: 0.8; }
 
+.mat-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mat-action-deactivate {
+  color: #6b7280;
+}
+.mat-action-deactivate:hover {
+  color: #374151;
+  background: #f3f4f6;
+}
+.mat-action-delete {
+  color: #e02424;
+}
+.mat-action-delete:hover {
+  background: #fef2f2;
+}
+
 .mat-thumb-empty {
   width: 40px;
   height: 40px;
@@ -3341,6 +3369,65 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .slot-group-block table tbody td:nth-child(2) {
   white-space: normal;
   word-break: break-word;
+}
+
+/* 미배치 스펙 — 존재감 낮춤 */
+.slot-group-block table tbody tr.slot-row--unplaced td {
+  background: #eef0f3;
+}
+.slot-group-block table tbody tr.slot-row--unplaced:hover td {
+  background: #e5e8ec;
+}
+.slot-group-block table tbody tr.slot-row--unplaced .slot-row-title {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+/* 스펙명 서브라인 — 설명·속성 */
+.slot-row-name {
+  vertical-align: top;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+.slot-row-title {
+  font-weight: 600;
+  color: var(--gray-900);
+  line-height: 1.35;
+}
+.slot-row-desc {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 400;
+  margin-top: 3px;
+  line-height: 1.45;
+}
+.slot-row-attrs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+.slot-row-attr-chip {
+  font-size: 10px;
+  background: #fff;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 2px 7px;
+  line-height: 1.4;
+  white-space: normal;
+}
+.slot-row-attr-chip strong {
+  font-weight: 600;
+  color: #374151;
+}
+.slot-row--unplaced .slot-row-attr-chip {
+  background: #f9fafb;
+  border-color: #dde1e6;
+  color: #6b7280;
+}
+.slot-row--unplaced .slot-row-attr-chip strong {
+  color: #4b5563;
 }
 
 /* 자재 칩 — 업체명 서브텍스트 */
@@ -5149,6 +5236,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 /* 브랜드 카드 */
 .bm-card {
+  --bm-color: #6b7280;
   min-width: 200px;
   max-width: 260px;
   flex-shrink: 0;
@@ -5161,12 +5249,37 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .bm-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 .bm-card.sortable-dragging { opacity: 0.35; }
 
-/* 카드 헤더 */
+/* 가로 정렬 DnD — 좌/우 삽입 표시 (전역 top/bottom border 대신) */
+.bm-cards-row > .bm-card.sortable-drag-over-top {
+  border-top: none !important;
+  border-left: 2px solid var(--primary) !important;
+}
+.bm-cards-row > .bm-card.sortable-drag-over-bottom {
+  border-bottom: none !important;
+  border-right: 2px solid var(--primary) !important;
+}
+
+/* 카드 헤더 — 흰 배경 + 브랜드색 액센트만 (탁한 틴트 제거) */
 .bm-card-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px 8px 6px;
+  gap: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  border-bottom: 1px solid var(--gray-100);
+}
+@supports (color-mix(in srgb, red, white)) {
+  .bm-card-head {
+    border-bottom-color: color-mix(in srgb, var(--bm-color) 14%, var(--gray-200));
+  }
+}
+.bm-card-accent {
+  width: 3px;
+  min-height: 22px;
+  border-radius: 99px;
+  background: var(--bm-color);
+  flex-shrink: 0;
+  align-self: center;
 }
 .bm-drag {
   color: var(--gray-300);
@@ -5189,11 +5302,17 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 }
 .bm-card-cnt {
   font-size: 11px;
-  color: var(--gray-400);
-  background: rgba(0,0,0,0.06);
+  color: var(--gray-500);
+  background: var(--gray-100);
   border-radius: 99px;
   padding: 1px 7px;
   flex-shrink: 0;
+}
+@supports (color-mix(in srgb, red, white)) {
+  .bm-card-cnt {
+    color: color-mix(in srgb, var(--bm-color) 55%, var(--gray-600));
+    background: color-mix(in srgb, var(--bm-color) 9%, white);
+  }
 }
 .bm-card-actions {
   display: flex;
@@ -5214,14 +5333,40 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .bm-lineup-item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 5px 6px;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.1s;
   font-size: 12px;
 }
-.bm-lineup-item:hover { background: var(--gray-100); }
+.bm-lineup-item:hover { background: var(--gray-50); }
+
+/* 브랜드 카드 내 상태 점 — 전역 초록 대신 카드 브랜드색 톤 */
+.bm-lineup-item .status-dot {
+  width: 6px;
+  height: 6px;
+}
+.bm-lineup-item .status-dot.active {
+  background: var(--bm-color);
+}
+@supports (color-mix(in srgb, red, white)) {
+  .bm-lineup-item .status-dot.active {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--bm-color) 22%, transparent);
+  }
+}
+.bm-lineup-item .status-dot.inactive {
+  background: #c4cdd8;
+  box-shadow: none;
+}
+.bm-lineup-item .status-dot.discontinued {
+  background: #e05252;
+  box-shadow: none;
+}
+.bm-lineup-item .status-dot.pending {
+  background: #d97706;
+  box-shadow: none;
+}
 .bm-lineup-name {
   flex: 1;
   font-weight: 500;
