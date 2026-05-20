@@ -592,7 +592,9 @@ const Insulation = (function () {
       }).join('');
       return `<tr><th class="part-col">${escHtml(row.label)}</th>${cells}</tr>`;
     }).join('');
-    el.innerHTML = hdr + body;
+    const colgroup = '<colgroup><col class="col-part">' +
+      ZONES.map(() => '<col class="col-zone">').join('') + '</colgroup>';
+    el.innerHTML = colgroup + '<thead>' + hdr + '</thead><tbody>' + body + '</tbody>';
   }
 
   function buildStructureTxt() {

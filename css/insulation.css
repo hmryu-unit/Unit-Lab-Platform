@@ -2,29 +2,88 @@
 .insul-note { font-size: 12px; color: var(--gray-500); line-height: 1.5; margin-bottom: 12px; }
 .insul-note strong { color: var(--gray-700); }
 
-.insul-layer-table { width: 100%; border-collapse: collapse; border: 1px solid var(--gray-300); }
+/* ── 레이어 테이블 ──────────────────────────────────────── */
+.insul-layer-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 2px;
+}
+.insul-layer-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  border: 1px solid var(--gray-300);
+  table-layout: fixed;
+}
 .insul-layer-table th {
-  background: #e8eef7; border: 1px solid var(--gray-300); padding: 8px 6px;
-  font-size: 12px; font-weight: 600; color: var(--gray-700);
+  background: #e8eef7;
+  border: 1px solid var(--gray-300);
+  padding: 9px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-700);
+  text-align: center;
+  white-space: nowrap;
 }
-.insul-layer-table td { border: 1px solid var(--gray-300); padding: 4px 6px; vertical-align: middle; }
-.insul-layer-table select, .insul-layer-table input {
-  width: 100%; border: 1px solid var(--gray-200); padding: 5px 6px; font-size: 12.5px;
-  font-family: inherit; border-radius: 3px; background: #fff;
+.insul-layer-table td {
+  border: 1px solid var(--gray-300);
+  padding: 6px 8px;
+  vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
-.insul-layer-table .col-no { width: 52px; text-align: center; background: var(--gray-50); font-size: 11px; font-weight: 600; color: var(--gray-600); }
+.insul-layer-table select,
+.insul-layer-table input {
+  width: 100%;
+  border: 1px solid var(--gray-200);
+  padding: 5px 7px;
+  font-size: 12.5px;
+  font-family: inherit;
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.insul-layer-table select:focus,
+.insul-layer-table input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.insul-layer-table .col-no    { width: 52px;  text-align: center; background: var(--gray-50); font-size: 11px; font-weight: 600; color: var(--gray-600); }
 .insul-layer-table tr.surface .col-no,
 .insul-layer-table tr.finish-row .col-no { color: var(--gray-700); }
-.insul-layer-table .col-lambda { width: 96px; }
-.insul-layer-table .col-thick { width: 84px; }
-.insul-layer-table .col-r { width: 96px; }
-.insul-layer-table .col-r input { background: #f8fafc; text-align: right; font-variant-numeric: tabular-nums; }
-.insul-layer-table tr.surface td { background: #f0fdf4; }
+.insul-layer-table .col-lambda { width: 100px; }
+.insul-layer-table .col-thick  { width:  88px; }
+.insul-layer-table .col-r      { width: 100px; }
+.insul-layer-table .col-r input { background: #f8fafc; text-align: right; font-variant-numeric: tabular-nums; color: var(--gray-700); }
+.insul-layer-table tr.surface  td { background: #f0fdf4; }
 .insul-layer-table tr.finish-row td { background: #fffbeb; }
 
-.insul-pkg-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; min-width: 0; }
-@media (max-width: 900px) { .insul-pkg-layout { grid-template-columns: 1fr; } }
-.insul-pkg-layout > .card { min-width: 0; overflow-x: auto; }
+/* ── 패키지 페이지 전체 레이아웃 ─────────────────────────── */
+.insul-pkg-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .insul-pkg-layout { grid-template-columns: 1fr; }
+}
+
+/* 우측 카드 */
+.insul-pkg-layout > .card {
+  min-width: 0;
+  overflow: hidden; /* 카드 자체 바깥으로 삐져나가지 않게 */
+}
+
+/* .card-b : index.html에서 card-body 대신 사용하는 클래스 */
+.card-b {
+  padding: 20px 22px;
+}
+@media (max-width: 700px) {
+  .card-b { padding: 14px 14px; }
+}
 .insul-pkg-list { border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; background: #fff; }
 .insul-pkg-list-item { padding: 12px 14px; border-bottom: 1px solid var(--gray-100); cursor: pointer; }
 .insul-pkg-list-item:hover { background: var(--gray-50); }
@@ -32,54 +91,215 @@
 .insul-pkg-list-item .t { font-weight: 600; font-size: 13px; }
 .insul-pkg-list-item .d { font-size: 11px; color: var(--gray-500); margin-top: 2px; font-family: monospace; }
 
-.insul-pkg-head { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
-.insul-pkg-head .field label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 4px; }
-.insul-pkg-head input, .insul-pkg-head select {
-  padding: 8px 10px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13px; min-width: 160px;
+/* ── 패키지 헤더 폼 ─────────────────────────────────────── */
+.insul-pkg-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.insul-pkg-head .field {
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 260px;
+}
+.insul-pkg-head .field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+}
+.insul-pkg-head input,
+.insul-pkg-head select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+}
+.insul-pkg-head input:focus,
+.insul-pkg-head select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-.insul-matrix { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.insul-matrix th { background: var(--gray-50); padding: 10px; border-bottom: 2px solid var(--gray-200); font-size: 11px; }
-.insul-matrix td { padding: 10px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
-.insul-matrix .part-col { width: 148px; background: var(--gray-50); font-weight: 600; text-align: left; padding-left: 12px; font-size: 11.5px; line-height: 1.35; }
-.insul-matrix td.cell-fail { background: #fef2f2; }
+/* ── 매트릭스 래퍼 ──────────────────────────────────────── */
+.insul-matrix-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -22px;          /* card-b 패딩 상쇄 → 테이블이 카드 좌우 끝까지 */
+  padding: 0 22px;          /* 스크롤 시 좌우 여백 유지 */
+  margin-bottom: 2px;
+}
+
+/* ── 매트릭스 테이블 ─────────────────────────────────────── */
+.insul-matrix {
+  width: 100%;
+  min-width: 680px;         /* 최소 폭 보장 (8행×5열 기준) */
+  border-collapse: collapse;
+  font-size: 12.5px;
+  table-layout: fixed;
+}
+.insul-matrix col.col-part { width: 148px; }
+.insul-matrix col.col-zone { width: auto; }   /* 나머지 4열이 균등 분배 */
+
+.insul-matrix th {
+  background: var(--gray-50);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--gray-200);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-600);
+  text-align: center;
+  white-space: nowrap;
+}
+.insul-matrix td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: top;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.insul-matrix .part-col {
+  background: var(--gray-50);
+  font-weight: 600;
+  text-align: left;
+  padding-left: 14px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--gray-700);
+  white-space: normal;
+}
+.insul-matrix td.cell-fail  { background: #fef2f2; }
 .insul-matrix td.cell-fail.active { background: #fee2e2; box-shadow: inset 0 0 0 2px #dc2626; }
-.insul-matrix td.cell-na { background: var(--gray-50); opacity: 0.85; }
+.insul-matrix td.cell-na    { background: var(--gray-50); opacity: 0.85; }
 .insul-matrix td.cell-optional { background: #fafafa; }
-.insul-matrix td.cell { cursor: pointer; min-width: 140px; padding: 10px 12px; }
-.insul-matrix td.cell:hover { background: var(--gray-50); }
-.insul-matrix td.cell.active { background: var(--primary-light); box-shadow: inset 0 0 0 2px var(--primary); }
-.insul-matrix .struct-main { font-size: 12.5px; font-weight: 600; color: var(--gray-800); line-height: 1.45; }
-.insul-matrix .struct-line { margin-top: 3px; }
+.insul-matrix td.cell {
+  cursor: pointer;
+  padding: 10px 12px;
+  transition: background 0.12s;
+}
+.insul-matrix td.cell:hover { background: #f0f4ff; }
+.insul-matrix td.cell.active {
+  background: var(--primary-light);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+.insul-matrix .struct-main  { font-size: 12.5px; font-weight: 600; color: var(--gray-800); line-height: 1.45; }
+.insul-matrix .struct-line  { margin-top: 3px; }
 .insul-matrix .struct-line:first-child { margin-top: 0; }
 .insul-matrix .struct-empty { font-size: 12px; color: var(--gray-400); font-style: italic; }
 
+/* ── U값 비교 패널 ──────────────────────────────────────── */
 .insul-cell-u-panel {
-  display: grid; gap: 8px; margin-bottom: 14px; padding: 12px 14px;
-  background: #f8fafc; border: 1px solid var(--gray-200); border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
 }
-.insul-u-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 560px) { .insul-u-compare-grid { grid-template-columns: 1fr; } }
-.insul-u-compare-item { text-align: center; padding: 10px 8px; background: #fff; border-radius: 6px; border: 1px solid var(--gray-200); }
-.insul-u-compare-item .k { display: block; font-size: 11px; font-weight: 600; color: var(--gray-500); margin-bottom: 6px; }
-.insul-u-compare-item .v { display: block; font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gray-800); }
-.insul-u-compare-item .unit { display: block; font-size: 10px; color: var(--gray-400); margin-top: 4px; }
+.insul-u-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 560px) {
+  .insul-u-compare-grid { grid-template-columns: 1fr; }
+}
+.insul-u-compare-item {
+  text-align: center;
+  padding: 12px 10px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+.insul-u-compare-item .k {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+.insul-u-compare-item .v {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gray-800);
+  line-height: 1.1;
+}
+.insul-u-compare-item .unit {
+  display: block;
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-top: 5px;
+}
 .insul-u-compare-calc .v { color: var(--primary); }
-.insul-u-compare-status { font-size: 12px; font-weight: 600; text-align: center; color: var(--gray-600); }
-.insul-cell-u-panel.insul-u-pass { border-color: #6ee7b7; background: #ecfdf5; }
-.insul-cell-u-panel.insul-u-pass .insul-u-compare-status { color: #047857; }
-.insul-cell-u-panel.insul-u-fail { border-color: #fca5a5; background: #fef2f2; }
-.insul-cell-u-panel.insul-u-fail .insul-u-compare-calc .v { color: #dc2626; }
-.insul-cell-u-panel.insul-u-fail .insul-u-compare-status { color: #b91c1c; }
+.insul-u-compare-status {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gray-600);
+  padding: 4px 0;
+}
+.insul-cell-u-panel.insul-u-pass  { border-color: #6ee7b7; background: #ecfdf5; }
+.insul-cell-u-panel.insul-u-pass  .insul-u-compare-status { color: #047857; }
+.insul-cell-u-panel.insul-u-fail  { border-color: #fca5a5; background: #fef2f2; }
+.insul-cell-u-panel.insul-u-fail  .insul-u-compare-calc .v { color: #dc2626; }
+.insul-cell-u-panel.insul-u-fail  .insul-u-compare-status { color: #b91c1c; }
 .insul-cell-u-panel.insul-u-optional .insul-u-compare-status { color: var(--gray-500); font-weight: 500; }
 .insul-u-struct-summary {
-  font-size: 13px; font-weight: 600; color: var(--gray-800); line-height: 1.5;
-  padding: 8px 10px; background: #fff; border-radius: 6px; border: 1px solid var(--gray-200);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
 }
-.insul-u-meta { font-size: 11px; color: var(--gray-500); text-align: center; line-height: 1.45; }
+.insul-u-meta {
+  font-size: 11px;
+  color: var(--gray-500);
+  text-align: center;
+  line-height: 1.5;
+}
 
-.insul-cell-editor { margin-top: 18px; padding-top: 18px; border-top: 2px solid var(--gray-200); }
-.insul-cell-editor .editor-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+/* ── 셀 편집 영역 ───────────────────────────────────────── */
+.insul-cell-editor {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 2px solid var(--gray-200);
+}
+.insul-cell-editor .editor-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.insul-cell-editor .editor-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 16px;
+  background: var(--primary);
+  border-radius: 2px;
+}
 
 .insul-finish-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
 @media (max-width: 800px) { .insul-finish-layout { grid-template-columns: 1fr; } }
