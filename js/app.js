@@ -1277,7 +1277,7 @@ function editLineup(lineupId) {
 function deleteLineup(lineupId, name) {
   const item = State.lineups.find(l => l.id === lineupId);
   if (!item) return;
-  confirmDelete(`플랫폼 "${name}"을 삭제하시겠습니까?\n연결된 패키지와 스펙에 영향을 줄 수 있습니다.`, async () => {
+  confirmDelete(`플랫폼 "${name}"을 삭제하시겠습니까?`, async () => {
     try {
       await API.delete('lineups', item.id);
       await logChange('lineup', lineupId, name, 'delete', item, null);
@@ -2324,7 +2324,7 @@ function renderSlotPool(stId) {
         <div class="slot-pool-info">
           <div class="slot-pool-top">
             <span class="slot-pool-name">${escHtml(sl.name)}</span>
-            ${sl.code ? `<span class="slot-pool-code">${escHtml(sl.code)}</span>` : ''}
+
             ${categoryBadge(sl.slot_type||'기타')}
           </div>
           ${attrChips ? `<div class="slot-pool-attrs">${attrChips}</div>` : ''}
@@ -2445,7 +2445,7 @@ async function saveItem() {
 
 function deleteItem(itemId, name) {
   const assignCount = State.slotAssignments.filter(a => a.item_id === itemId).length;
-  const warn = assignCount > 0 ? `\n⚠️ 이 항목에 배치된 스펙 ${assignCount}개가 함께 삭제됩니다.` : '';
+  const warn = assignCount > 0 ? ` (배치된 스펙 ${assignCount}개 함께 삭제)` : '';
   confirmDelete(`항목 "${name}"을 삭제하시겠습니까?${warn}`, async () => {
     try {
       // 이 항목의 slot_assignments도 삭제
@@ -2649,7 +2649,7 @@ function editGradeInDetail(setId) {
 
 function deleteGradeInDetail(setId, name) {
   const assignCount = State.slotAssignments.filter(a => a.grade_id === setId).length;
-  const warn = assignCount > 0 ? `\n⚠️ 이 등급의 스펙 배치 ${assignCount}개가 함께 삭제됩니다.` : '';
+  const warn = assignCount > 0 ? ` (스펙 배치 ${assignCount}개 함께 삭제)` : '';
   confirmDelete(`등급 "${name}"을 삭제하시겠습니까?${warn}`, async () => {
     try {
       const toDelete = State.slotAssignments.filter(a => a.grade_id === setId);
@@ -2695,7 +2695,7 @@ function editSlotInDetail(slotId) {
 
 function deleteSlotInDetail(slotId, name) {
   const assignCount = State.slotAssignments.filter(a => a.slot_id === slotId).length;
-  const warn = assignCount > 0 ? `\n⚠️ 이 스펙의 셀 배치 ${assignCount}개가 함께 삭제됩니다.` : '';
+  const warn = assignCount > 0 ? ` (셀 배치 ${assignCount}개 함께 삭제)` : '';
   confirmDelete(`스펙 "${name}"을 삭제하시겠습니까?${warn}`, async () => {
     try {
       const toDelete = State.slotAssignments.filter(a => a.slot_id === slotId);
@@ -2981,7 +2981,7 @@ function editPackage(stId) {
 
 function deletePackage(stId, name) {
   const setCount = State.grades.filter(s => s.package_id === stId).length;
-  const warnMsg  = setCount > 0 ? `\n⚠️ 이 패키지에 속한 등급 ${setCount}개가 있습니다!` : '';
+  const warnMsg  = setCount > 0 ? ` (등급 ${setCount}개 포함)` : '';
   confirmDelete(`패키지 "${name}"을 삭제하시겠습니까?${warnMsg}`, async () => {
     try {
       await API.delete('packages', stId);
@@ -3034,7 +3034,7 @@ function editCategory(catId) {
 
 function deleteCategory(catId, name) {
   const stCount = State.packages.filter(st => st.category_id === catId).length;
-  const warn    = stCount > 0 ? `\n⚠️ 이 분류에 속한 패키지 ${stCount}개가 있습니다!\n패키지들은 삭제되지 않고 "미분류"로 남습니다.` : '';
+  const warn    = stCount > 0 ? ` (패키지 ${stCount}개는 미분류로 이동)` : '';
   confirmDelete(`분류 "${name}"을 삭제하시겠습니까?${warn}`, async () => {
     try {
       await API.delete('package_categories', catId);
@@ -3670,7 +3670,7 @@ function editSlot(slotId) {
 function deleteSlot(slotId, name) {
   const item = State.slots.find(s => s.id === slotId);
   if (!item) return;
-  confirmDelete(`스펙 "${name}"을 삭제하시겠습니까?\n연결된 자재 정보도 함께 영향을 받습니다.`, async () => {
+  confirmDelete(`스펙 "${name}"을 삭제하시겠습니까?`, async () => {
     try {
       await API.delete('slots', item.id);
       await logChange('slot', slotId, name, 'delete', item, null);
@@ -4126,7 +4126,7 @@ function deleteMaterial(matId, name) {
   if (!item) return;
   // 연결된 스펙 확인
   const linked = State.slotMaterials.filter(sm => sm.material_id === matId);
-  const linkedMsg = linked.length > 0 ? `\n⚠️ ${linked.length}개 스펙에 연결되어 있습니다!` : '';
+  const linkedMsg = linked.length > 0 ? ` (${linked.length}개 스펙 연결 해제됨)` : '';
   confirmDelete(`자재 "${name}"을 삭제하시겠습니까?${linkedMsg}`, async () => {
     try {
       await API.delete('materials', item.id);
