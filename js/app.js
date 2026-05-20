@@ -4106,9 +4106,7 @@ function deactivateMaterial(matId, name) {
     message: `자재 "${name}"을(를) 비활성화하시겠습니까?`,
     okLabel: '비활성화',
     okClass: 'btn btn-secondary',
-    warnText: linked.length > 0
-      ? `연결된 스펙 ${linked.length}개에 영향을 줄 수 있습니다. 수정 화면에서 다시 활성화할 수 있습니다.`
-      : '수정 화면에서 다시 활성화할 수 있습니다.',
+    warnText: linked.length > 0 ? `연결된 스펙 ${linked.length}개에 영향을 줄 수 있습니다.` : null,
     onOk: async () => {
       try {
         const payload = { ...item, status: 'inactive' };
