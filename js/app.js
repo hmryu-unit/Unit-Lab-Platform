@@ -584,6 +584,14 @@ document.addEventListener('keydown', e => {
 });
 
 // ===== 내비게이션 =====
+function scrollPageToTop() {
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  const content = document.getElementById('content');
+  if (content) content.scrollTop = 0;
+}
+
 function navigate(page) {
   // 활성 페이지 전환
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -634,6 +642,8 @@ function navigate(page) {
     enums: renderEnumsPage
   };
   if (renders[page]) renders[page]();
+  scrollPageToTop();
+  requestAnimationFrame(scrollPageToTop);
 }
 
 // ===== 데이터 로드 =====
@@ -1318,7 +1328,8 @@ function getLineupEng(lineupId) {
     id: row?.id || '',
     structure_spec: row?.structure_spec || '',
     structure_logic: row?.structure_logic || '',
-    insulation_notes: row?.insulation_notes || ''
+    insulation_notes: row?.insulation_notes || '',
+    insulation_package_id: row?.insulation_package_id || ''
   };
 }
 
@@ -1332,7 +1343,10 @@ async function saveLineupEngineering(lineupId, fields) {
     lineup_id: lineupId,
     structure_spec: fields.structure_spec ?? existing?.structure_spec ?? '',
     structure_logic: fields.structure_logic ?? existing?.structure_logic ?? '',
-    insulation_notes: fields.insulation_notes ?? existing?.insulation_notes ?? ''
+    insulation_notes: fields.insulation_notes ?? existing?.insulation_notes ?? '',
+    insulation_package_id: fields.insulation_package_id !== undefined
+      ? (fields.insulation_package_id || null)
+      : (existing?.insulation_package_id ?? null)
   };
   try {
     if (existing?.id) {
@@ -1413,10 +1427,7 @@ async function saveLineupEngFromDetail(section) {
     fields.structure_logic = document.getElementById('ld-structure-logic')?.value ?? '';
   } else if (section === 'insulation') {
     fields.insulation_notes = document.getElementById('ld-insulation-notes')?.value ?? '';
-    if (typeof Insulation !== 'undefined') {
-      const pkgId = document.getElementById('ld-insulation-package')?.value ?? '';
-      Insulation.setLineupPackageId(currentLineupId, pkgId);
-    }
+    fields.insulation_package_id = document.getElementById('ld-insulation-package')?.value ?? '';
   }
   const ok = await saveLineupEngineering(currentLineupId, fields);
   if (ok) {
@@ -1516,7 +1527,7 @@ function renderLineupInsulationSection(lineupId) {
 // ===================================================
 let currentLineupId = null;
 
-function navigateToLineupDetail(lineupId) {
+async function navigateToLineupDetail(lineupId) {
   currentLineupId = lineupId;
   State.currentPage = 'lineup-detail';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1524,7 +1535,10 @@ function navigateToLineupDetail(lineupId) {
   document.getElementById('page-lineup-detail').classList.add('active');
   document.querySelector('.nav-item[data-page="lineups"]').classList.add('active');
   document.getElementById('header-title').textContent = '플랫폼 상세';
-  renderLineupDetail(lineupId);
+  scrollPageToTop();
+  await renderLineupDetail(lineupId);
+  scrollPageToTop();
+  requestAnimationFrame(scrollPageToTop);
 }
 
 async function renderLineupDetail(lineupId) {
@@ -2340,7 +2354,7 @@ function openPackageModalForCat(catId) {
 // ===================================================
 let currentPackageId = null;
 
-function navigateToPackageDetail(stId) {
+async function navigateToPackageDetail(stId) {
   currentPackageId = stId;
   State.currentPage = 'package-detail';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2348,7 +2362,10 @@ function navigateToPackageDetail(stId) {
   document.getElementById('page-package-detail').classList.add('active');
   document.querySelector('.nav-item[data-page="packages"]').classList.add('active');
   document.getElementById('header-title').textContent = '패키지 상세';
-  renderPackageDetail(stId);
+  scrollPageToTop();
+  await renderPackageDetail(stId);
+  scrollPageToTop();
+  requestAnimationFrame(scrollPageToTop);
 }
 
 // ── 패키지 상세 메인 렌더 ──
@@ -3055,9 +3072,73 @@ function deleteSlotInDetail(slotId, name) {
 }
 
 // ── 자재 연결 빠른 모달 ──
+const INSUL_SPEC_MAT_TYPE = '단열재';
+
+function _setSmqTypeBadge(slotType) {
+  const badgeEl = document.getElementById('smq-type-badge');
+  if (!badgeEl) return;
+  const isAllTypes = !slotType || slotType === '기타';
+  if (!isAllTypes) {
+    const enumEntry = State.enums.find(e => e.group_key === 'material_type' && e.value === slotType);
+    const color = enumEntry?.color || '#6b7280';
+    badgeEl.innerHTML =
+      `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;`+
+      `color:${escHtml(color)};background:${escHtml(color)}1a;border:1px solid ${escHtml(color)}40;`+
+      `padding:2px 9px;border-radius:99px;white-space:nowrap">`+
+      `<span style="width:7px;height:7px;border-radius:50%;background:${escHtml(color)};flex-shrink:0"></span>`+
+      `${escHtml(slotType)}</span>`;
+    badgeEl.style.display = 'inline-flex';
+  } else {
+    badgeEl.style.display = 'none';
+    badgeEl.innerHTML = '';
+  }
+}
+
+function openInsulSpecMatQuickModal(specId) {
+  if (typeof Insulation === 'undefined') return;
+  const spec = Insulation.getSpecById(specId);
+  if (!spec) return;
+
+  const modeEl = document.getElementById('smq-mode');
+  if (modeEl) modeEl.value = 'insulation';
+  const insulIdEl = document.getElementById('smq-insul-spec-id');
+  if (insulIdEl) insulIdEl.value = specId;
+
+  const matType = INSUL_SPEC_MAT_TYPE;
+  _setSmqTypeBadge(matType);
+  const slotTypeInput = document.getElementById('smq-slot-type');
+  if (slotTypeInput) slotTypeInput.value = matType;
+
+  const hadMat = !!spec.material_id;
+  document.getElementById('smq-title').textContent = hadMat
+    ? `자재 변경 — ${spec.name}`
+    : `자재 연결 — ${spec.name}`;
+  document.getElementById('smq-slot-id').value = '';
+  const smqReplaceId = document.getElementById('smq-replace-id');
+  if (smqReplaceId) smqReplaceId.value = '';
+  document.getElementById('smq-record-id').value = '';
+  document.getElementById('smq-material').value = '';
+  document.getElementById('smq-note').value = '';
+  document.getElementById('smq-search').value = '';
+  document.getElementById('smq-confirm-btn').disabled = true;
+
+  const scopedMats = State.materials.filter(m => (m.category || '') === matType);
+  _renderSmqTable(scopedMats);
+  openModal('slot-mat-quick-modal');
+  requestAnimationFrame(() => {
+    const inp = document.getElementById('smq-search');
+    if (inp) inp.focus();
+  });
+}
+
 function openSlotMatQuickModal(slotId) {
   const slot = State.slots.find(s => s.id === slotId);
   if (!slot) return;
+
+  const modeEl = document.getElementById('smq-mode');
+  if (modeEl) modeEl.value = 'slot';
+  const insulIdEl = document.getElementById('smq-insul-spec-id');
+  if (insulIdEl) insulIdEl.value = '';
 
   // 기존 연결 여부 확인 (변경 모드 판단용 — 차단하지 않음)
   const existing = State.slotMaterials.find(sm => sm.slot_id === slotId);
@@ -3070,24 +3151,7 @@ function openSlotMatQuickModal(slotId) {
     ? State.materials
     : State.materials.filter(m => (m.category || '') === slotType);
 
-  // 유형 배지 — 타이틀 우측 인라인
-  const badgeEl = document.getElementById('smq-type-badge');
-  if (badgeEl) {
-    if (!isAllTypes) {
-      const enumEntry = State.enums.find(e => e.group_key === 'material_type' && e.value === slotType);
-      const color = enumEntry?.color || '#6b7280';
-      badgeEl.innerHTML =
-        `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;`+
-        `color:${escHtml(color)};background:${escHtml(color)}1a;border:1px solid ${escHtml(color)}40;`+
-        `padding:2px 9px;border-radius:99px;white-space:nowrap">`+
-        `<span style="width:7px;height:7px;border-radius:50%;background:${escHtml(color)};flex-shrink:0"></span>`+
-        `${escHtml(slotType)}</span>`;
-      badgeEl.style.display = 'inline-flex';
-    } else {
-      badgeEl.style.display = 'none';
-      badgeEl.innerHTML = '';
-    }
-  }
+  _setSmqTypeBadge(isAllTypes ? '' : slotType);
 
   // 현재 슬롯 유형을 hidden에 저장 (filterSmqMaterials에서 스코프 유지)
   const slotTypeInput = document.getElementById('smq-slot-type');
@@ -3234,11 +3298,28 @@ function selectSmqMaterial(matId) {
 }
 
 async function saveSlotMatQuick() {
-  const slotId    = document.getElementById('smq-slot-id').value;
+  const mode      = document.getElementById('smq-mode')?.value || 'slot';
   const matId     = document.getElementById('smq-material').value;
-  const replaceId = document.getElementById('smq-replace-id')?.value || '';
   if (!matId) { showToast('자재를 선택하세요', 'error'); return; }
 
+  if (mode === 'insulation') {
+    const specId = document.getElementById('smq-insul-spec-id')?.value || '';
+    const mat = State.materials.find(m => m.id === matId);
+    try {
+      if (typeof Insulation !== 'undefined') {
+        await Insulation.linkSpecMaterial(specId, matId);
+      }
+      closeModal('slot-mat-quick-modal');
+      if (State.currentPage === 'slot-materials') await renderSlotMaterials();
+      else if (State.currentPage === 'insulation-specs' && typeof Insulation !== 'undefined') {
+        await Insulation.renderSpecsPage();
+      }
+    } catch (e) { showToast('저장 실패: ' + e.message, 'error'); }
+    return;
+  }
+
+  const slotId    = document.getElementById('smq-slot-id').value;
+  const replaceId = document.getElementById('smq-replace-id')?.value || '';
   const mat = State.materials.find(m => m.id === matId);
   const payload = { slot_id: slotId, material_id: matId, is_default: true };
 
@@ -4039,9 +4120,33 @@ async function refreshAfterSlotSave() {
 // ===== 자재 DB =====
 // ===================================================
 let matFilterText = '', matFilterCategory = '', matFilterStatus = '';
+let matShowInactive = true;
+
+function isMatInactive(m) {
+  return m.status === 'inactive' || m.status === 'discontinued';
+}
+
+function updateMatShowInactiveBtn() {
+  const btn = document.getElementById('mat-show-inactive-btn');
+  if (!btn) return;
+  if (matShowInactive) {
+    btn.innerHTML = '<i class="fas fa-eye"></i> 비활성화 표시';
+    btn.classList.add('mat-inactive-toggle--on');
+  } else {
+    btn.innerHTML = '<i class="fas fa-eye-slash"></i> 비활성화 숨김';
+    btn.classList.remove('mat-inactive-toggle--on');
+  }
+}
+
+function toggleMatShowInactive() {
+  matShowInactive = !matShowInactive;
+  updateMatShowInactiveBtn();
+  renderMaterialTable();
+}
 
 async function renderMaterials() {
   await loadAll();
+  updateMatShowInactiveBtn();
   renderMaterialTable();
 }
 
@@ -4062,9 +4167,12 @@ function renderMaterialTable() {
     // 'inactive' 필터는 구버전 'discontinued' 값도 함께 포함
     data = data.filter(m =>
       matFilterStatus === 'inactive'
-        ? (m.status === 'inactive' || m.status === 'discontinued')
+        ? isMatInactive(m)
         : m.status === matFilterStatus
     );
+  }
+  if (!matShowInactive && matFilterStatus !== 'inactive') {
+    data = data.filter(m => !isMatInactive(m));
   }
 
   const tbody = document.getElementById('materials-tbody');
@@ -4087,11 +4195,14 @@ function renderMaterialTable() {
     .sort((a, b) => (a.sort_order||99) - (b.sort_order||99))
     .forEach((e, i) => { catOrder[e.value] = i; });
 
-  // 카테고리 순서 → 자재명 순으로 정렬
+  // 카테고리 순서 → (같은 유형 내) 활성 먼저, 자재명 순
   data.sort((a, b) => {
     const oa = catOrder[a.category||'기타'] ?? 999;
     const ob = catOrder[b.category||'기타'] ?? 999;
     if (oa !== ob) return oa - ob;
+    const ia = isMatInactive(a) ? 1 : 0;
+    const ib = isMatInactive(b) ? 1 : 0;
+    if (ia !== ib) return ia - ib;
     return (a.name||'').localeCompare(b.name||'');
   });
 
@@ -4111,10 +4222,7 @@ function renderMaterialTable() {
         ${escHtml(m.name)}
       </td>
       <td style="font-size:12px;color:#6b7280">${escHtml(m.brand||'-')}</td>
-      <td style="font-size:12px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-          title="${escHtml(m.spec||'')}">
-        ${escHtml(m.spec||'-')}
-      </td>
+      <td class="mat-col-spec" style="font-size:12px;color:#6b7280">${escHtml(m.spec||'-')}</td>
       <td style="font-size:12px;color:#6b7280">${escHtml(m.unit||'-')}</td>
       <td class="price">${formatPrice(m.unit_price)}</td>
       <td style="font-size:12px;color:#6b7280">${escHtml(m.supplier||'-')}</td>
@@ -4124,12 +4232,12 @@ function renderMaterialTable() {
           <button class="btn btn-sm btn-secondary" onclick="editMaterial('${escHtml(m.id)}')" title="수정">
             <i class="fas fa-edit"></i>
           </button>
-          ${(m.status !== 'inactive' && m.status !== 'discontinued')
-            ? `<button class="btn btn-sm btn-ghost mat-action-deactivate" onclick="deactivateMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="비활성화"><i class="fas fa-ban"></i></button>`
-            : '<span class="mat-action-slot" aria-hidden="true"></span>'}
           <button class="btn btn-sm btn-ghost mat-action-delete" onclick="deleteMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="삭제">
             <i class="fas fa-trash"></i>
           </button>
+          ${(m.status !== 'inactive' && m.status !== 'discontinued')
+            ? `<button class="btn btn-sm btn-ghost mat-action-deactivate" onclick="deactivateMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="비활성화"><i class="fas fa-ban"></i></button>`
+            : '<span class="mat-action-slot" aria-hidden="true"></span>'}
         </div>
       </td>
     </tr>`;
@@ -4485,10 +4593,20 @@ function deleteMaterial(matId, name) {
 // ===================================================
 // ===== 스펙-자재 연결 =====
 // ===================================================
+function _insulSpecRoleLabel(role) {
+  if (role === 'panel') return '판넬';
+  if (role === 'insul') return '단열재';
+  if (role === 'finish') return '마감재';
+  return role || '—';
+}
+
 async function renderSlotMaterials() {
   await loadAll();
+  if (typeof Insulation !== 'undefined') await Insulation.ensureReady();
   const container = document.getElementById('slot-materials-container');
   if (!container) return;
+
+  const insulSpecs = typeof Insulation !== 'undefined' ? Insulation.getSpecs() : [];
 
   // ── ① 비활성화 자재 연결 목록 (매트릭스에 배치된 스펙만) ──
   const discItems = State.slotMaterials
@@ -4520,80 +4638,114 @@ async function renderSlotMaterials() {
       };
     });
 
-  // ────────────────────────────────
-  // 표 ① : 비활성화 자재 연결
-  // ────────────────────────────────
-  let discRows;
-  if (discItems.length > 0) {
-    discRows = discItems.map(({ sm, slot, mat }) => {
-      const pkg = slot ? State.packages.find(st => st.id === slot.package_id) : null;
-      return `
-        <tr>
-          <td>${slot ? categoryBadge(slot.slot_type || '기타') : ''}</td>
-          <td>
-            <div class="sml-name">${escHtml(slot?.name || '—')}</div>
-          </td>
-          <td>${pkg ? `<div class="sml-name">${escHtml(pkg.name)}</div>` : '<span class="sml-empty-cell">—</span>'}</td>
-          <td>
-            <div class="sml-name sml-name--disc">
-              <i class="fas fa-exclamation-circle"></i>${escHtml(mat?.name || '—')}
-            </div>
-            ${mat?.supplier ? `<div class="sml-sub">${escHtml(mat.supplier)}</div>` : ''}
-          </td>
-          <td>
-            <div class="sml-actions">
-              <button class="btn btn-sm btn-primary"
-                onclick="openSlotMatQuickModal('${escHtml(slot?.id || '')}')">
-                <i class="fas fa-exchange-alt"></i> 자재 변경
-              </button>
-            </div>
-          </td>
-        </tr>`;
-    }).join('');
-  } else {
-    discRows = `
-      <tr>
-        <td colspan="5">
-          <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>비활성화 자재가 연결된 스펙이 없습니다</div>
-        </td>
-      </tr>`;
-  }
+  const insulDiscItems = insulSpecs
+    .filter(sp => sp.material_id)
+    .map(sp => ({
+      sp,
+      mat: State.materials.find(m => m.id === sp.material_id),
+    }))
+    .filter(({ mat }) => mat && (mat.status === 'inactive' || mat.status === 'discontinued'));
 
-  // ────────────────────────────────
-  // 표 ② : 미연결 스펙
-  // ────────────────────────────────
-  let unlinkedRows;
-  if (unlinkedItems.length > 0) {
-    unlinkedRows = unlinkedItems.map(({ sl, pkg, grades, items }) => `
+  const insulUnlinkedItems = insulSpecs.filter(sp => !sp.material_id);
+  const discCount = discItems.length + insulDiscItems.length;
+  const unlinkedCount = unlinkedItems.length + insulUnlinkedItems.length;
+
+  const discSlotRows = discItems.map(({ slot, mat }) => {
+    const pkg = slot ? State.packages.find(st => st.id === slot.package_id) : null;
+    return `
       <tr>
-        <td>${categoryBadge(sl.slot_type || '기타')}</td>
-        <td><div class="sml-name">${escHtml(sl.name)}</div></td>
+        <td>${slot ? categoryBadge(slot.slot_type || '기타') : ''}</td>
+        <td><div class="sml-name">${escHtml(slot?.name || '—')}</div></td>
         <td>${pkg ? `<div class="sml-name">${escHtml(pkg.name)}</div>` : '<span class="sml-empty-cell">—</span>'}</td>
         <td>
-          ${grades.length
-            ? grades.map(g => `<span class="sml-tag">${escHtml(g)}</span>`).join('')
-            : '<span class="sml-empty-cell">—</span>'}
+          <div class="sml-name sml-name--disc">
+            <i class="fas fa-exclamation-circle"></i>${escHtml(mat?.name || '—')}
+          </div>
+          ${mat?.supplier ? `<div class="sml-sub">${escHtml(mat.supplier)}</div>` : ''}
         </td>
         <td>
-          ${items.length
-            ? items.map(i => `<span class="sml-tag">${escHtml(i)}</span>`).join('')
-            : '<span class="sml-empty-cell">—</span>'}
-        </td>
-        <td>
-          <button class="btn btn-sm btn-primary"
-            onclick="openSlotMatQuickModal('${escHtml(sl.id)}')">
-            <i class="fas fa-link"></i> 자재 연결
-          </button>
-        </td>
-      </tr>`).join('');
-  } else {
-    unlinkedRows = `
-      <tr>
-        <td colspan="6">
-          <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>자재가 미연결된 스펙이 없습니다</div>
+          <div class="sml-actions">
+            <button class="btn btn-sm btn-primary" onclick="openSlotMatQuickModal('${escHtml(slot?.id || '')}')">
+              <i class="fas fa-exchange-alt"></i> 자재 변경
+            </button>
+          </div>
         </td>
       </tr>`;
-  }
+  });
+
+  const discInsulRows = insulDiscItems.map(({ sp, mat }) => `
+    <tr>
+      <td>${categoryBadge('단열재')}</td>
+      <td>
+        <div class="sml-name">${escHtml(sp.name)}</div>
+        <div class="sml-sub">단열 스펙 · ${escHtml(_insulSpecRoleLabel(sp.role))}</div>
+      </td>
+      <td><span class="sml-empty-cell">—</span></td>
+      <td>
+        <div class="sml-name sml-name--disc">
+          <i class="fas fa-exclamation-circle"></i>${escHtml(mat?.name || '—')}
+        </div>
+        ${mat?.supplier ? `<div class="sml-sub">${escHtml(mat.supplier)}</div>` : ''}
+      </td>
+      <td>
+        <div class="sml-actions">
+          <button class="btn btn-sm btn-primary" onclick="openInsulSpecMatQuickModal('${escHtml(sp.id)}')">
+            <i class="fas fa-exchange-alt"></i> 자재 변경
+          </button>
+        </div>
+      </td>
+    </tr>`);
+
+  const discRows = discCount > 0
+    ? [...discSlotRows, ...discInsulRows].join('')
+    : `<tr><td colspan="5">
+        <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>비활성화 자재가 연결된 스펙이 없습니다</div>
+      </td></tr>`;
+
+  const unlinkedSlotRows = unlinkedItems.map(({ sl, pkg, grades, items }) => `
+    <tr>
+      <td>${categoryBadge(sl.slot_type || '기타')}</td>
+      <td><div class="sml-name">${escHtml(sl.name)}</div></td>
+      <td>${pkg ? `<div class="sml-name">${escHtml(pkg.name)}</div>` : '<span class="sml-empty-cell">—</span>'}</td>
+      <td>
+        ${grades.length
+          ? grades.map(g => `<span class="sml-tag">${escHtml(g)}</span>`).join('')
+          : '<span class="sml-empty-cell">—</span>'}
+      </td>
+      <td>
+        ${items.length
+          ? items.map(i => `<span class="sml-tag">${escHtml(i)}</span>`).join('')
+          : '<span class="sml-empty-cell">—</span>'}
+      </td>
+      <td>
+        <button class="btn btn-sm btn-primary" onclick="openSlotMatQuickModal('${escHtml(sl.id)}')">
+          <i class="fas fa-link"></i> 자재 연결
+        </button>
+      </td>
+    </tr>`);
+
+  const unlinkedInsulRows = insulUnlinkedItems.map(sp => `
+    <tr>
+      <td>${categoryBadge('단열재')}</td>
+      <td>
+        <div class="sml-name">${escHtml(sp.name)}</div>
+        <div class="sml-sub">단열 스펙 · ${escHtml(_insulSpecRoleLabel(sp.role))}</div>
+      </td>
+      <td><span class="sml-empty-cell">—</span></td>
+      <td><span class="sml-empty-cell">—</span></td>
+      <td><span class="sml-empty-cell">—</span></td>
+      <td>
+        <button class="btn btn-sm btn-primary" onclick="openInsulSpecMatQuickModal('${escHtml(sp.id)}')">
+          <i class="fas fa-link"></i> 자재 연결
+        </button>
+      </td>
+    </tr>`);
+
+  const unlinkedRows = unlinkedCount > 0
+    ? [...unlinkedSlotRows, ...unlinkedInsulRows].join('')
+    : `<tr><td colspan="6">
+        <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>자재가 미연결된 스펙이 없습니다</div>
+      </td></tr>`;
 
   container.innerHTML = `
     <div class="sml-block sml-block--disc">
@@ -4601,9 +4753,9 @@ async function renderSlotMaterials() {
         <span class="sml-block-icon sml-block-icon--disc"><i class="fas fa-ban"></i></span>
         <div>
           <div class="sml-block-title">비활성화된 자재 연결됨</div>
-          <div class="sml-block-desc">연결된 자재를 변경해 주세요</div>
+          <div class="sml-block-desc">패키지 스펙·단열 스펙 중 비활성화 자재가 연결된 항목입니다</div>
         </div>
-        <span class="sml-block-badge sml-block-badge--disc">${discItems.length}건</span>
+        <span class="sml-block-badge sml-block-badge--disc">${discCount}건</span>
       </div>
       <div class="table-wrapper" style="margin:0;border-radius:0 0 10px 10px;border-top:none">
         <table>
@@ -4627,9 +4779,9 @@ async function renderSlotMaterials() {
         <span class="sml-block-icon sml-block-icon--unlinked"><i class="fas fa-unlink"></i></span>
         <div>
           <div class="sml-block-title">자재 미연결</div>
-          <div class="sml-block-desc">패키지·항목에 배치된 스펙 중 자재가 아직 연결되지 않은 항목입니다</div>
+          <div class="sml-block-desc">패키지에 배치된 스펙·단열 스펙 중 자재가 아직 연결되지 않은 항목입니다</div>
         </div>
-        <span class="sml-block-badge sml-block-badge--unlinked">${unlinkedItems.length}건</span>
+        <span class="sml-block-badge sml-block-badge--unlinked">${unlinkedCount}건</span>
       </div>
       <div class="table-wrapper" style="margin:0;border-radius:0 0 10px 10px;border-top:none">
         <table>
@@ -5582,5 +5734,7 @@ function getLineupSelectionCount(lineupId) {
 // ===== 초기화 =====
 // ===================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  scrollPageToTop();
   await renderDashboard();
 });

@@ -270,6 +270,7 @@ body {
   padding: 24px;
   min-width: 0;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 /* 페이지 - 기본 숨김 */
@@ -2594,51 +2595,69 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 .mat-thumb:hover { opacity: 0.8; }
 
-/* 자재 DB 테이블 — 열 너비 고정 */
+/* 자재 DB — 비활성화 표시 토글 (필터 오른쪽) */
+.mat-inactive-toggle {
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.mat-inactive-toggle--on {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* 자재 DB 테이블 — 페이지 너비 안에 맞춤, 잘림 없이 줄바꿈 */
+#page-materials .table-wrapper {
+  overflow-x: hidden;
+  max-width: 100%;
+}
 #page-materials .materials-table {
   table-layout: fixed;
   width: 100%;
-  min-width: 820px;
+  max-width: 100%;
+  min-width: 0;
 }
-#page-materials .materials-table .mat-col-type     { width: 68px; }
-#page-materials .materials-table .mat-col-img      { width: 56px; }
-#page-materials .materials-table .mat-col-code     { width: 90px; }
-#page-materials .materials-table .mat-col-name     { width: auto; min-width: 120px; }
-#page-materials .materials-table .mat-col-brand    { width: 80px; }
-#page-materials .materials-table .mat-col-spec     { width: 110px; }
-#page-materials .materials-table .mat-col-unit     { width: 46px; }
-#page-materials .materials-table .mat-col-price    { width: 82px; }
-#page-materials .materials-table .mat-col-supplier { width: 90px; }
-#page-materials .materials-table .mat-col-status   { width: 72px; }
-#page-materials .materials-table .mat-col-actions  { width: 100px; }
+#page-materials .materials-table .mat-col-type     { width: 7%; }
+#page-materials .materials-table .mat-col-img      { width: 48px; }
+#page-materials .materials-table .mat-col-code     { width: 10%; }
+#page-materials .materials-table .mat-col-name     { width: 15%; }
+#page-materials .materials-table .mat-col-brand    { width: 9%; }
+#page-materials .materials-table .mat-col-spec     { width: 14%; }
+#page-materials .materials-table .mat-col-unit     { width: 5%; }
+#page-materials .materials-table .mat-col-price    { width: 8%; }
+#page-materials .materials-table .mat-col-supplier { width: 11%; }
+#page-materials .materials-table .mat-col-status   { width: 7%; }
+#page-materials .materials-table .mat-col-actions  { width: 10%; }
 
-#page-materials .materials-table thead th {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 10px 10px;
-}
+#page-materials .materials-table thead th,
 #page-materials .materials-table tbody td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 9px 10px;
-}
-#page-materials .materials-table .mat-col-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#page-materials .materials-table .mat-col-spec {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#page-materials .materials-table .mat-col-actions,
-#page-materials .materials-table .mat-col-status {
   overflow: visible;
   text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  padding: 9px 10px;
+  vertical-align: middle;
+}
+/* 짧은 열·버튼·배지는 한 줄 유지 */
+#page-materials .materials-table thead th:nth-child(1),
+#page-materials .materials-table thead th:nth-child(2),
+#page-materials .materials-table thead th:nth-child(7),
+#page-materials .materials-table thead th:nth-child(8),
+#page-materials .materials-table thead th:nth-child(10),
+#page-materials .materials-table thead th:nth-child(11),
+#page-materials .materials-table tbody td:nth-child(1),
+#page-materials .materials-table tbody td:nth-child(2),
+#page-materials .materials-table tbody td:nth-child(7),
+#page-materials .materials-table tbody td:nth-child(8),
+#page-materials .materials-table tbody td:nth-child(10),
+#page-materials .materials-table tbody td:nth-child(11) {
   white-space: nowrap;
+}
+#page-materials .materials-table .mat-col-actions,
+#page-materials .materials-table tbody td.mat-col-actions {
+  overflow: visible;
 }
 
 .mat-status-slot {
@@ -5684,7 +5703,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   width: 100%;
 }
 #page-lineups table col:nth-child(1) { width: 38px; }   /* 드래그 핸들 */
-#page-lineups table col:nth-child(2) { width: 90px; }   /* 브랜드 */
+#page-lineups table col:nth-child(2) { width: 108px; }   /* 브랜드 */
 #page-lineups table col:nth-child(3) { width: auto; min-width: 140px; }  /* 플랫폼명 */
 #page-lineups table col:nth-child(4) { width: 30%; }    /* 설명 */
 #page-lineups table col:nth-child(5) { width: 70px; }   /* 상태 */
@@ -5702,6 +5721,16 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 브랜드 열: 배지 잘림 방지 (ellipsis는 긴 이름만 플랫폼명 열에 적용) */
+#page-lineups table tbody td:nth-child(2) {
+  overflow: visible;
+  text-overflow: clip;
+}
+#page-lineups table thead th:nth-child(2) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 /* 설명 열: 줄바꿈 허용 */
 #page-lineups table tbody td:nth-child(4) {
   white-space: normal;

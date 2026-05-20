@@ -200,7 +200,7 @@
             <table>
               <colgroup>
                 <col style="width:38px">
-                <col style="width:90px">
+                <col style="width:108px">
                 <col>
                 <col style="width:30%">
                 <col style="width:74px">
@@ -281,6 +281,19 @@
             </table>
           </div>
         </div>
+
+        <div class="card insul-specs-pkg-section">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span class="card-title">단열 패키지</span>
+            <button type="button" class="btn btn-primary btn-sm" onclick="Insulation.addPackage()">
+              <i class="fas fa-plus"></i> 패키지 추가
+            </button>
+          </div>
+          <div class="card-b" style="padding:12px">
+            <div class="insul-pkg-list insul-pkg-list--mgmt" id="insul-pkg-list-mgmt"></div>
+            <p class="insul-note" style="margin:10px 0 0">패키지명을 클릭하면 <strong>단열 패키지 관리</strong>에서 부위×지역 구조를 편집합니다.</p>
+          </div>
+        </div>
       </section>
 
       <!-- ===== 단열 패키지 관리 ===== -->
@@ -288,17 +301,23 @@
         <div class="page-header">
           <div>
             <div class="page-title">단열 패키지 관리</div>
-            <div class="page-desc">[별표1] 부위(외기 직·간접 행 분리)×지역별 구조·U. 공동주택·바닥난방은 패키지 속성. 플랫폼 연결은 <strong>플랫폼 상세</strong>.</div>
           </div>
         </div>
-        <div class="insul-pkg-layout">
-          <aside>
-            <div class="insul-pkg-list" id="insul-pkg-list"></div>
-            <button type="button" class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%" onclick="Insulation.addPackage()">
-              <i class="fas fa-plus"></i> 패키지 추가
-            </button>
-          </aside>
-          <div class="card" style="margin-bottom:0">
+        <div class="insul-pkg-select-bar">
+          <label for="insul-pkg-select">패키지</label>
+          <select id="insul-pkg-select" class="form-control" onchange="Insulation.onPackageSelectChange(this.value)">
+            <option value="">— 선택 —</option>
+          </select>
+        </div>
+        <div id="insul-pkg-empty" class="insul-pkg-empty card" style="display:none;margin-bottom:16px">
+            <div class="card-b" style="text-align:center;padding:48px 24px;color:var(--gray-500)">
+              <i class="fas fa-box-open" style="font-size:28px;margin-bottom:12px;opacity:.5"></i>
+              <p style="font-weight:600;color:var(--gray-700);margin-bottom:6px">등록된 단열 패키지가 없습니다</p>
+              <p style="font-size:13px;margin-bottom:16px"><strong>단열 스펙 관리</strong>에서 패키지를 추가한 뒤 여기서 부위×지역 구조를 편집하세요.</p>
+              <button type="button" class="btn btn-primary btn-sm" onclick="navigate('insulation-specs')"><i class="fas fa-arrow-left"></i> 스펙 관리로 이동</button>
+            </div>
+          </div>
+          <div class="card" id="insul-pkg-editor" style="margin-bottom:0">
             <div class="card-b">
               <div class="insul-pkg-head">
                 <div class="field"><label>패키지명</label><input type="text" id="insul-pkg-name" oninput="Insulation.onPkgMetaInput()"></div>
@@ -318,63 +337,71 @@
                   </select>
                 </div>
               </div>
-              <p class="insul-note" id="insul-pkg-criteria-hint">[별표1] 공동주택 · 바닥난방</p>
-              <p class="insul-note">셀에는 구조 요약 표시 · 클릭 시 기준/계산 U 확인 · 내벽은 기준 없음(구조만)</p>
-              <div class="insul-matrix-wrap">
-                <table class="insul-matrix" id="insul-pkg-matrix">
-                  <colgroup>
-                    <col class="col-part">
-                    <col class="col-zone">
-                    <col class="col-zone">
-                    <col class="col-zone">
-                    <col class="col-zone">
-                  </colgroup>
-                </table>
-              </div>
-              <div class="insul-cell-editor">
-                <div class="editor-title" id="insul-cell-editor-title">외벽 · 중부1 편집</div>
-                <div class="insul-cell-u-panel" id="insul-cell-u-panel">
-                  <div class="insul-u-compare-grid">
-                    <div class="insul-u-compare-item">
-                      <span class="k">[별표1] 기준 U</span>
-                      <span class="v" id="insul-limit-u">—</span>
-                      <span class="unit">W/m²·K 이하</span>
-                    </div>
-                    <div class="insul-u-compare-item insul-u-compare-calc">
-                      <span class="k">구조 계산 U</span>
-                      <span class="v" id="insul-calc-u">—</span>
-                      <span class="unit">W/m²·K</span>
+              <div class="insul-pkg-workspace">
+                <div class="insul-pkg-matrix-panel">
+                  <div class="insul-matrix-wrap">
+                    <table class="insul-matrix" id="insul-pkg-matrix">
+                      <colgroup>
+                        <col class="col-part">
+                        <col class="col-zone">
+                        <col class="col-zone">
+                        <col class="col-zone">
+                        <col class="col-zone">
+                      </colgroup>
+                    </table>
+                  </div>
+                </div>
+                <aside class="insul-pkg-cell-panel">
+                  <div class="insul-pkg-panel-head">
+                    <div class="editor-title" id="insul-cell-editor-title"><span class="insul-editor-idle">표에서 부위·지역 셀을 선택하세요</span></div>
+                    <button type="button" class="btn btn-primary btn-sm" id="insul-btn-pkg-save" disabled
+                      title="패키지 이름·코드·속성 저장"><i class="fas fa-save"></i> 저장</button>
+                  </div>
+                  <div class="insul-cell-editor">
+                    <div class="insul-cell-editor-body" id="insul-cell-editor-body">
+                      <div class="insul-cell-u-panel" id="insul-cell-u-panel">
+                        <div class="insul-u-compare-grid">
+                          <div class="insul-u-compare-item">
+                            <span class="k">기준</span>
+                            <span class="v" id="insul-limit-u">—</span>
+                            <span class="unit">W/m²·K 이하</span>
+                          </div>
+                          <div class="insul-u-compare-item">
+                            <span class="k">계산 결과</span>
+                            <span class="v" id="insul-calc-u">—</span>
+                            <span class="unit">W/m²·K</span>
+                          </div>
+                        </div>
+                        <div class="insul-u-struct-row">
+                          <div class="insul-u-struct-summary" id="insul-u-struct-summary"></div>
+                          <div class="insul-u-thickness" id="insul-u-thickness" hidden></div>
+                        </div>
+                        <div class="insul-u-meta" id="insul-u-meta"></div>
+                      </div>
+                      <div class="insul-layer-table-wrap">
+                        <table class="insul-layer-table">
+                          <colgroup>
+                            <col class="col-no">
+                            <col><!-- 소재 -->
+                            <col class="col-lambda">
+                            <col class="col-thick">
+                            <col class="col-r">
+                          </colgroup>
+                          <thead>
+                            <tr>
+                              <th class="col-no" aria-hidden="true"></th><th>소재</th>
+                              <th class="col-lambda">λ</th><th class="col-thick">mm</th><th class="col-r">R</th>
+                            </tr>
+                          </thead>
+                          <tbody id="insul-layer-tbody"></tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
-                  <div class="insul-u-compare-status" id="insul-u-status"></div>
-                  <div class="insul-u-struct-summary" id="insul-u-struct-summary"></div>
-                  <div class="insul-u-meta" id="insul-u-meta"></div>
-                </div>
-                <div class="insul-layer-table-wrap">
-                  <table class="insul-layer-table">
-                    <colgroup>
-                      <col class="col-no">
-                      <col><!-- 소재 -->
-                      <col class="col-lambda">
-                      <col class="col-thick">
-                      <col class="col-r">
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th class="col-no">번호</th><th>소재</th>
-                        <th class="col-lambda">λ</th><th class="col-thick">mm</th><th class="col-r">R</th>
-                      </tr>
-                    </thead>
-                    <tbody id="insul-layer-tbody"></tbody>
-                  </table>
-                </div>
-              </div>
-              <div style="margin-top:14px;text-align:right">
-                <button type="button" class="btn btn-primary" id="insul-btn-pkg-save" disabled><i class="fas fa-save"></i> 패키지 저장</button>
+                </aside>
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       <!-- ===== 실내 마감 옵션 ===== -->
@@ -575,6 +602,10 @@
             <option value="inactive">비활성화</option>
             <option value="pending">검토중</option>
           </select>
+          <button type="button" class="btn btn-sm btn-secondary mat-inactive-toggle" id="mat-show-inactive-btn"
+            onclick="toggleMatShowInactive()" title="목록에서 비활성화 자재 표시 여부">
+            <i class="fas fa-eye"></i> 비활성화 표시
+          </button>
         </div>
 
         <div class="table-wrapper">
@@ -1221,6 +1252,8 @@
       <button class="modal-close" onclick="closeModal('slot-mat-quick-modal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body" style="padding-bottom:8px">
+      <input type="hidden" id="smq-mode" value="slot">
+      <input type="hidden" id="smq-insul-spec-id">
       <input type="hidden" id="smq-slot-id">
       <input type="hidden" id="smq-record-id">
       <input type="hidden" id="smq-material">
@@ -1349,6 +1382,52 @@
 </div>
 
 
+<!-- 단열 패키지 추가/수정 모달 -->
+<div class="modal-overlay" id="insul-pkg-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="insul-pkg-modal-title">단열 패키지</span>
+      <button class="modal-close" onclick="closeModal('insul-pkg-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="insul-pkg-modal-record-id">
+      <div class="form-group">
+        <label class="form-label">패키지명 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="insul-pkg-modal-name" placeholder="예: U-Standard 단열셋">
+      </div>
+      <div class="form-group">
+        <label class="form-label">코드 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="insul-pkg-modal-code" placeholder="예: INS-STD">
+      </div>
+      <div class="form-group" id="insul-pkg-duplicate-wrap">
+        <label class="form-label">복제 원본 <span style="font-weight:400;color:var(--gray-400)">(선택)</span></label>
+        <select class="form-control" id="insul-pkg-modal-duplicate-from">
+          <option value="">— 빈 패키지로 시작 —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">공동주택 여부</label>
+        <select class="form-control" id="insul-pkg-modal-apartment">
+          <option value="1">공동주택</option>
+          <option value="0">공동주택 외</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">바닥난방 여부</label>
+        <select class="form-control" id="insul-pkg-modal-floor-heat">
+          <option value="1">바닥난방</option>
+          <option value="0">바닥난방 아님</option>
+        </select>
+      </div>
+      <p class="insul-note" style="margin-bottom:0">부위×지역 구조는 편집 시 자동 저장됩니다. 「패키지 저장」은 이름·코드·속성 확인용입니다.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('insul-pkg-modal')">취소</button>
+      <button class="btn btn-primary" id="insul-btn-pkg-modal-save">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- 단열 스펙 모달 -->
 <div class="modal-overlay" id="insul-spec-modal">
   <div class="modal" style="max-width:480px">
@@ -1390,29 +1469,6 @@
     </div>
   </div>
 </div>
-
-<!-- 단열 스펙 자재 연결 -->
-<div class="modal-overlay" id="insul-spec-mat-modal">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header">
-      <span class="modal-title" id="insul-mat-pick-title">자재 연결</span>
-      <button class="modal-close" onclick="closeModal('insul-spec-mat-modal')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div class="search-box" style="margin-bottom:12px">
-        <span class="search-icon"><i class="fas fa-search"></i></span>
-        <input type="text" class="form-control" id="insul-mat-pick-search" placeholder="자재 검색…"
-          oninput="Insulation.filterMatPick(this.value)">
-      </div>
-      <div id="insul-mat-pick-list" style="max-height:320px;overflow-y:auto"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('insul-spec-mat-modal')">취소</button>
-      <button class="btn btn-primary" id="insul-mat-pick-confirm" disabled>연결</button>
-    </div>
-  </div>
-</div>
-
 
 <script src="js/insulation.js"></script>
 <script src="js/app.js"></script>
