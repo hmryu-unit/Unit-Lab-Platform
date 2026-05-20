@@ -2436,10 +2436,71 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 .mat-thumb:hover { opacity: 0.8; }
 
+/* 자재 DB 테이블 — 열 너비 고정 */
+#page-materials .materials-table {
+  table-layout: fixed;
+  width: 100%;
+}
+#page-materials .materials-table .mat-col-type { width: 72px; }
+#page-materials .materials-table .mat-col-img { width: 52px; }
+#page-materials .materials-table .mat-col-code { width: 96px; }
+#page-materials .materials-table .mat-col-name { width: auto; }
+#page-materials .materials-table .mat-col-brand { width: 80px; }
+#page-materials .materials-table .mat-col-spec { width: 120px; }
+#page-materials .materials-table .mat-col-unit { width: 48px; }
+#page-materials .materials-table .mat-col-price { width: 88px; }
+#page-materials .materials-table .mat-col-supplier { width: 96px; }
+#page-materials .materials-table .mat-col-status { width: 76px; }
+#page-materials .materials-table .mat-col-actions { width: 108px; }
+
+#page-materials .materials-table thead th,
+#page-materials .materials-table tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#page-materials .materials-table .mat-col-name,
+#page-materials .materials-table .mat-col-spec {
+  white-space: nowrap;
+}
+#page-materials .materials-table .mat-col-actions,
+#page-materials .materials-table .mat-col-status {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.mat-status-slot {
+  display: inline-block;
+  width: 52px;
+  height: 20px;
+  vertical-align: middle;
+}
+.mat-action-slot {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.mat-name-icon-slot {
+  display: inline-block;
+  width: 15px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.mat-name-warn-icon {
+  color: #9ca3af;
+  margin-right: 4px;
+  font-size: 11px;
+  width: 15px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 .mat-row-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 96px;
 }
 .mat-action-deactivate {
   color: #6b7280;
@@ -3358,11 +3419,38 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   table-layout: fixed;
   width: 100%;
 }
+.slot-group-block table .slot-col-type { width: 88px; }
+.slot-group-block table .slot-col-name { width: 22%; }
+.slot-group-block table .slot-col-pkg { width: 13%; }
+.slot-group-block table .slot-col-item { width: 12%; }
+.slot-group-block table .slot-col-mat { width: 20%; }
+.slot-group-block table .slot-col-actions { width: 96px; }
+
 .slot-group-block table thead th,
 .slot-group-block table tbody td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 관리 열 — 버튼 밀림 방지 + 오른쪽 여백 */
+.slot-group-block table thead th:last-child,
+.slot-group-block table tbody td.slot-col-actions {
+  padding-right: 16px;
+  padding-left: 10px;
+  overflow: visible;
+  text-overflow: clip;
+}
+.slot-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.slot-action-delete {
+  color: #e02424;
+}
+.slot-action-delete:hover {
+  background: #fef2f2;
 }
 /* 스펙명 컬럼은 줄바꿈 허용 */
 .slot-group-block table thead th:nth-child(2),

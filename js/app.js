@@ -157,6 +157,13 @@ function statusBadge(s) {
   return map[s] ?? `<span class="badge badge-gray">${s}</span>`;
 }
 
+/** 자재 DB 테이블 — 상태 열 너비 고정용 */
+function matStatusCell(status) {
+  const badge = statusBadge(status);
+  if (badge) return badge;
+  return '<span class="mat-status-slot" aria-hidden="true"></span>';
+}
+
 // 브랜드 선택지(enum lineup_brand) 색상 조회
 const BRAND_COLOR_FALLBACK = ['#1a56db', '#0e9f6e', '#9333ea', '#f59e0b', '#ef4444', '#06b6d4'];
 
@@ -3428,10 +3435,10 @@ function renderSlotTable() {
       <td><div class="slot-ref-wrap">${pkgCell}</div></td>
       <td><div class="slot-ref-wrap">${itemCell}</div></td>
       <td><div class="slot-mat-list">${matCell}</div></td>
-      <td>
-        <div style="display:flex;gap:4px">
+      <td class="slot-col-actions">
+        <div class="slot-row-actions">
           <button class="btn btn-sm btn-secondary" onclick="editSlot('${escHtml(sl.id)}')" title="수정"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-sm btn-ghost" style="color:#e02424" onclick="deleteSlot('${escHtml(sl.id)}','${escHtml(sl.name)}')" title="삭제"><i class="fas fa-trash"></i></button>
+          <button class="btn btn-sm btn-ghost slot-action-delete" onclick="deleteSlot('${escHtml(sl.id)}','${escHtml(sl.name)}')" title="삭제"><i class="fas fa-trash"></i></button>
         </div>
       </td>
     </tr>`;
@@ -3463,12 +3470,12 @@ function renderSlotTable() {
         <div class="table-wrapper" style="margin-bottom:0;border-radius:0 0 8px 8px;border-top:none">
           <table>
             <colgroup>
-              <col style="width:90px">
-              <col style="min-width:160px">
-              <col style="width:140px">
-              <col style="width:130px">
-              <col style="width:210px">
-              <col style="width:80px">
+              <col class="slot-col-type">
+              <col class="slot-col-name">
+              <col class="slot-col-pkg">
+              <col class="slot-col-item">
+              <col class="slot-col-mat">
+              <col class="slot-col-actions">
             </colgroup>
             <thead>
               <tr>
@@ -3759,8 +3766,10 @@ function renderMaterialTable() {
       <td>${categoryBadge(m.category||'기타')}</td>
       <td>${imgThumb}</td>
       <td><span class="font-mono">${escHtml(m.code||m.id)}</span></td>
-      <td style="font-weight:500">
-        ${(m.status==='inactive'||m.status==='discontinued') ? '<i class="fas fa-exclamation-circle" style="color:#9ca3af;margin-right:4px;font-size:11px"></i>' : ''}
+      <td class="mat-col-name" style="font-weight:500">
+        ${(m.status==='inactive'||m.status==='discontinued')
+          ? '<i class="fas fa-exclamation-circle mat-name-warn-icon"></i>'
+          : '<span class="mat-name-icon-slot" aria-hidden="true"></span>'}
         ${escHtml(m.name)}
       </td>
       <td style="font-size:12px;color:#6b7280">${escHtml(m.brand||'-')}</td>
@@ -3771,15 +3780,15 @@ function renderMaterialTable() {
       <td style="font-size:12px;color:#6b7280">${escHtml(m.unit||'-')}</td>
       <td class="price">${formatPrice(m.unit_price)}</td>
       <td style="font-size:12px;color:#6b7280">${escHtml(m.supplier||'-')}</td>
-      <td>${statusBadge(m.status)}</td>
-      <td>
+      <td class="mat-col-status">${matStatusCell(m.status)}</td>
+      <td class="mat-col-actions">
         <div class="mat-row-actions">
           <button class="btn btn-sm btn-secondary" onclick="editMaterial('${escHtml(m.id)}')" title="수정">
             <i class="fas fa-edit"></i>
           </button>
           ${(m.status !== 'inactive' && m.status !== 'discontinued')
             ? `<button class="btn btn-sm btn-ghost mat-action-deactivate" onclick="deactivateMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="비활성화"><i class="fas fa-ban"></i></button>`
-            : ''}
+            : '<span class="mat-action-slot" aria-hidden="true"></span>'}
           <button class="btn btn-sm btn-ghost mat-action-delete" onclick="deleteMaterial('${escHtml(m.id)}','${escHtml(m.name)}')" title="삭제">
             <i class="fas fa-trash"></i>
           </button>
