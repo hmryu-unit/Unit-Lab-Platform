@@ -4166,10 +4166,21 @@ async function renderSlotMaterials() {
   const unlinkedItems = State.slots
     .filter(sl => isSlotMatrixPlaced(sl.id))
     .filter(sl => !State.slotMaterials.some(sm => sm.slot_id === sl.id))
-    .map(sl => ({
-      sl,
-      setType: State.packages.find(st => st.id === sl.package_id),
-    }));
+    .map(sl => {
+      // 이 슬롯이 배치된 assignment 목록 수집
+      const assigns = State.slotAssignments.filter(a => a.slot_id === sl.id);
+      // 관련 등급·항목 중복 제거
+      const gradeIds = [...new Set(assigns.map(a => a.grade_id).filter(Boolean))];
+      const itemIds  = [...new Set(assigns.map(a => a.item_id).filter(Boolean))];
+      const grades   = gradeIds.map(id => State.grades.find(g => g.id === id)?.name).filter(Boolean);
+      const items    = itemIds.map(id => State.packageItems.find(i => i.id === id)?.name).filter(Boolean);
+      return {
+        sl,
+        pkg: State.packages.find(st => st.id === sl.package_id),
+        grades,
+        items,
+      };
+    });
 
   // ────────────────────────────────
   // 표 ① : 비활성화 자재 연결
@@ -4177,14 +4188,14 @@ async function renderSlotMaterials() {
   let discRows;
   if (discItems.length > 0) {
     discRows = discItems.map(({ sm, slot, mat }) => {
-      const setType = slot ? State.packages.find(st => st.id === slot.package_id) : null;
+      const pkg = slot ? State.packages.find(st => st.id === slot.package_id) : null;
       return `
         <tr>
           <td>${slot ? categoryBadge(slot.slot_type || '기타') : ''}</td>
           <td>
             <div class="sml-name">${escHtml(slot?.name || '—')}</div>
-            ${setType ? `<div class="sml-sub">${escHtml(setType.name)}</div>` : ''}
           </td>
+          <td>${pkg ? `<div class="sml-name">${escHtml(pkg.name)}</div>` : '<span class="sml-empty-cell">—</span>'}</td>
           <td>
             <div class="sml-name sml-name--disc">
               <i class="fas fa-exclamation-circle"></i>${escHtml(mat?.name || '—')}
@@ -4204,7 +4215,7 @@ async function renderSlotMaterials() {
   } else {
     discRows = `
       <tr>
-        <td colspan="4">
+        <td colspan="5">
           <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>비활성화 자재가 연결된 스펙이 없습니다</div>
         </td>
       </tr>`;
@@ -4215,12 +4226,20 @@ async function renderSlotMaterials() {
   // ────────────────────────────────
   let unlinkedRows;
   if (unlinkedItems.length > 0) {
-    unlinkedRows = unlinkedItems.map(({ sl, setType }) => `
+    unlinkedRows = unlinkedItems.map(({ sl, pkg, grades, items }) => `
       <tr>
         <td>${categoryBadge(sl.slot_type || '기타')}</td>
+        <td><div class="sml-name">${escHtml(sl.name)}</div></td>
+        <td>${pkg ? `<div class="sml-name">${escHtml(pkg.name)}</div>` : '<span class="sml-empty-cell">—</span>'}</td>
         <td>
-          <div class="sml-name">${escHtml(sl.name)}</div>
-          ${setType ? `<div class="sml-sub">${escHtml(setType.name)}</div>` : ''}
+          ${grades.length
+            ? grades.map(g => `<span class="sml-tag">${escHtml(g)}</span>`).join('')
+            : '<span class="sml-empty-cell">—</span>'}
+        </td>
+        <td>
+          ${items.length
+            ? items.map(i => `<span class="sml-tag">${escHtml(i)}</span>`).join('')
+            : '<span class="sml-empty-cell">—</span>'}
         </td>
         <td>
           <button class="btn btn-sm btn-primary"
@@ -4232,7 +4251,7 @@ async function renderSlotMaterials() {
   } else {
     unlinkedRows = `
       <tr>
-        <td colspan="3">
+        <td colspan="6">
           <div class="sml-empty"><i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px"></i>자재가 미연결된 스펙이 없습니다</div>
         </td>
       </tr>`;
@@ -4253,11 +4272,12 @@ async function renderSlotMaterials() {
           <colgroup>
             <col style="width:80px">
             <col style="width:auto">
+            <col style="width:140px">
             <col style="width:auto">
             <col style="width:110px">
           </colgroup>
           <thead>
-            <tr><th>유형</th><th>스펙</th><th>연결된 비활성화 자재</th><th>관리</th></tr>
+            <tr><th>유형</th><th>스펙</th><th>패키지</th><th>연결된 비활성화 자재</th><th>관리</th></tr>
           </thead>
           <tbody>${discRows}</tbody>
         </table>
@@ -4278,10 +4298,13 @@ async function renderSlotMaterials() {
           <colgroup>
             <col style="width:80px">
             <col style="width:auto">
-            <col style="width:120px">
+            <col style="width:140px">
+            <col style="width:130px">
+            <col style="width:130px">
+            <col style="width:110px">
           </colgroup>
           <thead>
-            <tr><th>유형</th><th>스펙</th><th>연결</th></tr>
+            <tr><th>유형</th><th>스펙</th><th>패키지</th><th>대상 등급</th><th>항목</th><th>연결</th></tr>
           </thead>
           <tbody>${unlinkedRows}</tbody>
         </table>
