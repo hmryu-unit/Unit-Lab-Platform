@@ -4327,6 +4327,24 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   gap: 4px;
 }
 
+/* 빈 셀 표시 */
+.sml-empty-cell {
+  color: var(--gray-300);
+  font-size: 13px;
+}
+
+/* 등급·항목 태그 칩 */
+.sml-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  margin: 2px 2px 2px 0;
+  font-size: 11px;
+  border-radius: 4px;
+  background: var(--gray-100, #f3f4f6);
+  color: var(--gray-600, #4b5563);
+  white-space: nowrap;
+}
+
 /* 정상 상태 — 모든 스펙 연결됨 */
 .sm-all-ok {
   text-align: center;
