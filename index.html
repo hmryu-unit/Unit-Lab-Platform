@@ -6,6 +6,7 @@
   <title>유닛랩 플랫폼 - 플랫폼 종합 시스템</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/insulation.css">
+  <link rel="stylesheet" href="css/structure.css">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
 </head>
@@ -37,9 +38,9 @@
 
     <div class="sidebar-section">
       <div class="sidebar-section-label">구조</div>
-      <a class="nav-item" data-page="structure-mgmt" onclick="navigate('structure-mgmt')">
-        <span class="nav-icon"><i class="fas fa-drafting-compass"></i></span>
-        구조 관리
+      <a class="nav-item" data-page="structure-packages" onclick="navigate('structure-packages')">
+        <span class="nav-icon"><i class="fas fa-cubes"></i></span>
+        구조 패키지
       </a>
     </div>
 
@@ -249,15 +250,22 @@
         </div>
       </section>
 
-      <!-- ===== 구조 관리 ===== -->
-      <section class="page" id="page-structure-mgmt">
+      <!-- ===== 구조 패키지 ===== -->
+      <section class="page" id="page-structure-packages">
         <div class="page-header">
           <div>
-            <div class="page-title">구조 관리</div>
-            <div class="page-desc">모든 플랫폼의 구조 규격·로직을 한곳에서 서술형으로 관리합니다.</div>
+            <div class="page-title">구조 패키지</div>
+            <div class="page-desc">구조 패키지(이름·코드)를 관리합니다. 부위·규격 상세는 추후 기획 후 연동합니다.</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="Structure.addPackage()"><i class="fas fa-plus"></i> 패키지 추가</button>
           </div>
         </div>
-        <div id="structure-mgmt-list" class="eng-mgmt-list"></div>
+        <div class="card">
+          <div class="card-b" style="padding:12px">
+            <div class="struc-pkg-list" id="struc-pkg-list"></div>
+          </div>
+        </div>
       </section>
 
       <!-- ===== 단열 스펙 관리 ===== -->
@@ -1470,7 +1478,40 @@
   </div>
 </div>
 
+<!-- 구조 패키지 모달 -->
+<div class="modal-overlay" id="struc-pkg-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title" id="struc-pkg-modal-title">구조 패키지</span>
+      <button class="modal-close" onclick="closeModal('struc-pkg-modal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="struc-pkg-modal-record-id">
+      <div class="form-group">
+        <label class="form-label">패키지명 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="struc-pkg-modal-name" placeholder="예: U-Standard 구조셋">
+      </div>
+      <div class="form-group">
+        <label class="form-label">코드 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="struc-pkg-modal-code" placeholder="예: STR-STD">
+      </div>
+      <div class="form-group" id="struc-pkg-duplicate-wrap">
+        <label class="form-label">복제 원본 <span style="font-weight:400;color:var(--gray-400)">(선택)</span></label>
+        <select class="form-control" id="struc-pkg-modal-duplicate-from">
+          <option value="">— 빈 패키지로 시작 —</option>
+        </select>
+      </div>
+      <p class="struc-note" style="margin-bottom:0">부위·규격 상세는 추후 기획 후 이 패키지에 연동됩니다.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('struc-pkg-modal')">취소</button>
+      <button class="btn btn-primary" id="struc-btn-pkg-modal-save">저장</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/insulation.js"></script>
+<script src="js/structure.js"></script>
 <script src="js/app.js"></script>
 
 

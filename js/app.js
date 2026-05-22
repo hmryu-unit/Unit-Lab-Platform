@@ -608,7 +608,7 @@ function navigate(page) {
   const titles = {
     dashboard: '대시보드',
     lineups: '플랫폼 관리',
-    'structure-mgmt': '구조 관리',
+    'structure-packages': '구조 패키지',
     'insulation-specs': '단열 스펙 관리',
     'insulation-packages': '단열 패키지 관리',
     'insulation-finish': '실내 마감 옵션',
@@ -628,7 +628,7 @@ function navigate(page) {
   const renders = {
     dashboard: renderDashboard,
     lineups: renderLineups,
-    'structure-mgmt': renderStructureMgmt,
+    'structure-packages': () => Structure.renderPackagesPage(),
     'insulation-specs': () => Insulation.renderSpecsPage(),
     'insulation-packages': () => Insulation.renderPackagesPage(),
     'insulation-finish': () => Insulation.renderFinishPage(),
@@ -1329,7 +1329,8 @@ function getLineupEng(lineupId) {
     structure_spec: row?.structure_spec || '',
     structure_logic: row?.structure_logic || '',
     insulation_notes: row?.insulation_notes || '',
-    insulation_package_id: row?.insulation_package_id || ''
+    insulation_package_id: row?.insulation_package_id || '',
+    structure_package_id: row?.structure_package_id || ''
   };
 }
 
@@ -1346,7 +1347,10 @@ async function saveLineupEngineering(lineupId, fields) {
     insulation_notes: fields.insulation_notes ?? existing?.insulation_notes ?? '',
     insulation_package_id: fields.insulation_package_id !== undefined
       ? (fields.insulation_package_id || null)
-      : (existing?.insulation_package_id ?? null)
+      : (existing?.insulation_package_id ?? null),
+    structure_package_id: fields.structure_package_id !== undefined
+      ? (fields.structure_package_id || null)
+      : (existing?.structure_package_id ?? null)
   };
   try {
     if (existing?.id) {
@@ -1368,11 +1372,17 @@ function _engNormText(v) {
   return (v ?? '').replace(/\r\n/g, '\n');
 }
 
-function isEngStructureDirty(lineupId, specId, logicId) {
+function isEngStructureDirty(lineupId, specId, logicId, pkgSelectId) {
   const eng = getLineupEng(lineupId);
   const spec = _engNormText(document.getElementById(specId)?.value);
   const logic = _engNormText(document.getElementById(logicId)?.value);
-  return spec !== _engNormText(eng.structure_spec) || logic !== _engNormText(eng.structure_logic);
+  const textDirty = spec !== _engNormText(eng.structure_spec) || logic !== _engNormText(eng.structure_logic);
+  let pkgDirty = false;
+  if (pkgSelectId && typeof Structure !== 'undefined') {
+    const saved = Structure.getLineupPackageId(lineupId) || '';
+    pkgDirty = (document.getElementById(pkgSelectId)?.value || '') !== saved;
+  }
+  return textDirty || pkgDirty;
 }
 
 function isEngInsulationDirty(lineupId, notesId, pkgSelectId) {
@@ -1392,7 +1402,7 @@ function bindEngSaveControls({ btnId, lineupId, section, inputIds }) {
   if (!btn) return;
   const sync = () => {
     const dirty = section === 'structure'
-      ? isEngStructureDirty(lineupId, inputIds[0], inputIds[1])
+      ? isEngStructureDirty(lineupId, inputIds[0], inputIds[1], inputIds[2])
       : isEngInsulationDirty(lineupId, inputIds[0], inputIds[1]);
     btn.disabled = !dirty;
   };
@@ -1425,6 +1435,7 @@ async function saveLineupEngFromDetail(section) {
   if (section === 'structure') {
     fields.structure_spec = document.getElementById('ld-structure-spec')?.value ?? '';
     fields.structure_logic = document.getElementById('ld-structure-logic')?.value ?? '';
+    fields.structure_package_id = document.getElementById('ld-structure-package')?.value ?? '';
   } else if (section === 'insulation') {
     fields.insulation_notes = document.getElementById('ld-insulation-notes')?.value ?? '';
     fields.insulation_package_id = document.getElementById('ld-insulation-package')?.value ?? '';
@@ -1466,32 +1477,14 @@ function _ldNarrativeField(label, id, value, placeholder, rows = 5) {
 }
 
 function renderLineupStructureSection(lineupId) {
+  if (typeof Structure !== 'undefined') {
+    Structure.renderLineupSection(lineupId);
+    return;
+  }
   const eng = getLineupEng(lineupId);
   const el = document.getElementById('detail-structure-section');
   if (!el) return;
-  el.innerHTML = `
-    <div class="ld-section card">
-      <div class="ld-section-head">
-        <div class="ld-section-title">
-          <i class="fas fa-drafting-compass" style="color:#1a56db"></i>
-          구조 규격 및 로직
-        </div>
-        <span class="ld-section-hint">서술형 — 추후 규격·로직 자동화 예정</span>
-      </div>
-      <div class="card-body ld-section-body">
-        ${_ldNarrativeField('구조 규격', 'ld-structure-spec', eng.structure_spec, '플랫폼 구조 규격을 서술하세요…', 6)}
-        ${_ldNarrativeField('구조 로직', 'ld-structure-logic', eng.structure_logic, '구조 적용·변형 로직을 서술하세요…', 6)}
-        <div class="ld-section-actions">
-          ${_engSaveBtnHtml('eng-save-detail-structure', '구조 저장', "saveLineupEngFromDetail('structure')")}
-        </div>
-      </div>
-    </div>`;
-  bindEngSaveControls({
-    btnId: 'eng-save-detail-structure',
-    lineupId,
-    section: 'structure',
-    inputIds: ['ld-structure-spec', 'ld-structure-logic']
-  });
+  el.innerHTML = `<div class="ld-section card"><div class="card-body">구조 모듈을 불러올 수 없습니다.</div></div>`;
 }
 
 function renderLineupInsulationSection(lineupId) {
@@ -1758,7 +1751,7 @@ function _engMgmtLineupsSorted() {
 }
 
 function _engHasStructureText(eng) {
-  return !!(eng.structure_spec?.trim() || eng.structure_logic?.trim());
+  return !!(eng.structure_spec?.trim() || eng.structure_logic?.trim() || eng.structure_package_id);
 }
 
 function _engHasInsulationText(eng) {
@@ -3304,7 +3297,6 @@ async function saveSlotMatQuick() {
 
   if (mode === 'insulation') {
     const specId = document.getElementById('smq-insul-spec-id')?.value || '';
-    const mat = State.materials.find(m => m.id === matId);
     try {
       if (typeof Insulation !== 'undefined') {
         await Insulation.linkSpecMaterial(specId, matId);

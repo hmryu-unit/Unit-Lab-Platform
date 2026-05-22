@@ -1,0 +1,32 @@
+/* 구조 패키지 */
+.struc-note { font-size: 12px; color: var(--gray-500); line-height: 1.5; }
+
+.struc-pkg-list { display: flex; flex-direction: column; gap: 8px; }
+.struc-pkg-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  background: #fff;
+}
+.struc-pkg-list-main { flex: 1; min-width: 0; cursor: grab; }
+.struc-pkg-list-main .t { font-weight: 600; font-size: 14px; }
+.struc-pkg-list-main .d { font-size: 12px; color: var(--gray-500); margin-left: 10px; }
+.struc-pkg-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+.ld-struc-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(220px, 280px);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .ld-struc-detail-layout { grid-template-columns: 1fr; }
+}
+.ld-struc-pkg-row { margin-bottom: 12px; }
+.ld-struc-pkg-row label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.ld-struc-preview-empty { font-size: 13px; color: var(--gray-500); margin: 0; }
+.ld-struc-preview-meta { font-size: 13px; color: var(--gray-700); margin: 0; }
+.ld-struc-notes-compact { min-height: 72px; font-size: 13px; }

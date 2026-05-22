@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS lineup_engineering (
   structure_spec TEXT NOT NULL DEFAULT '',
   structure_logic TEXT NOT NULL DEFAULT '',
   insulation_notes TEXT NOT NULL DEFAULT '',
+  insulation_package_id TEXT,
+  structure_package_id TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

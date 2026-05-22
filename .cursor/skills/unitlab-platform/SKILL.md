@@ -41,6 +41,7 @@ description: >-
 
 ## Page conventions
 
+- **구조 패키지** (`js/structure.js`): `structure_packages` only; 플랫폼 `lineup_engineering.structure_package_id` (부위·규격 상세 추후)
 - **스펙 관리** (`renderSlotTable`): groups by slot `package_id`; management column needs `slot-col-actions` + `padding-right`; use `inline-flex` for action buttons
 - **스펙-자재 연결** (`renderSlotMaterials`): only `isSlotMatrixPlaced` slots
 - **자재 DB** (`renderMaterialTable`): `materials-table` + `colgroup`; deactivate via `deactivateMaterial` + `openConfirmModal`, not `confirmDelete` wording
