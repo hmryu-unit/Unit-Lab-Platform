@@ -4,7 +4,8 @@
 const Insulation = (function () {
   const STORAGE_KEY = 'unitlab_insulation_v1';
   const STORAGE_MIGRATED_KEY = 'unitlab_insulation_migrated_v1';
-  const LAYER_SLOTS = 4;
+  /** 신규 빈 셀 기본 레이어 수 (추가·삭제는 자유) */
+  const DEFAULT_EMPTY_LAYER_COUNT = 4;
 
   const PART_TYPES = {
     wall: { label: '거실 외벽', short: '외벽', ri: 0.11, ro: { direct: 0.043, indirect: 0.11 }, dualInterior: false, roleHints: ['외단열', '외단열', '내단열', '내단열'] },
@@ -445,8 +446,21 @@ const Insulation = (function () {
     for (let i = 0; i < data.finishOptions.length; i++) await apiPersistFinish(data.finishOptions[i], i);
   }
 
-  function emptyLayers() {
-    return Array.from({ length: LAYER_SLOTS }, () => ({ specId: '', lambda: '', thick: '' }));
+  function emptyLayer() {
+    return { specId: '', lambda: '', thick: '' };
+  }
+
+  function emptyLayers(count = DEFAULT_EMPTY_LAYER_COUNT) {
+    return Array.from({ length: Math.max(1, count) }, () => emptyLayer());
+  }
+
+  function normalizeCellLayers(layers) {
+    if (!layers?.length) return emptyLayers();
+    return layers.map(L => ({
+      specId: L.specId || '',
+      lambda: L.lambda ?? '',
+      thick: L.thick ?? '',
+    }));
   }
 
   function specById(id) { return data.specs.find(s => s.id === id); }
@@ -601,7 +615,7 @@ const Insulation = (function () {
     const k = cellKey(partRowId, zoneId);
     const stored = pkg.cells[k];
     if (stored) {
-      const c = { ...stored, layers: (stored.layers || []).map(L => ({ ...L })) };
+      const c = { ...stored, layers: normalizeCellLayers(stored.layers) };
       if (row) {
         c.partType = row.partType;
         if (row.exposure) c.exposure = row.exposure;
@@ -741,8 +755,35 @@ const Insulation = (function () {
     const cell = peekCell(pkg, activePartRow, activeZone);
     pkgPartType = row?.partType || cell.partType;
     pkgExposure = row?.exposure || cell.exposure || 'direct';
-    pkgLayers = cell.layers.map(L => ({ ...L }));
+    pkgLayers = normalizeCellLayers(cell.layers);
     pkgFinishId = cell.finishId || '';
+  }
+
+  function syncLayerAddButton() {
+    const btn = document.getElementById('insul-btn-add-layer');
+    if (!btn) return;
+    const on = hasCellSelection();
+    btn.disabled = !on;
+    btn.title = on ? '레이어 추가' : '부위·지역 셀을 먼저 선택하세요';
+  }
+
+  function addLayer() {
+    if (!hasCellSelection()) {
+      showToast('표에서 부위·지역 셀을 먼저 선택하세요', 'warning');
+      return;
+    }
+    pkgLayers.push(emptyLayer());
+    renderPackageTable();
+  }
+
+  function removeLayer(index) {
+    if (!hasCellSelection()) return;
+    if (pkgLayers.length <= 1) {
+      showToast('레이어는 최소 1개가 필요합니다', 'warning');
+      return;
+    }
+    pkgLayers.splice(index, 1);
+    renderPackageTable();
   }
 
   function specOptionsHtml(selected) {
@@ -951,26 +992,35 @@ const Insulation = (function () {
     let html = '';
     html += `<tr class="surface"><td class="col-no">표면</td>
       <td colspan="3"><input readonly value="${escHtml(surf.top.label)}"></td>
-      <td class="col-r"><input readonly value="${fmtR(surf.top.r)}"></td></tr>`;
-    for (let i = 0; i < LAYER_SLOTS; i++) {
+      <td class="col-r"><input readonly value="${fmtR(surf.top.r)}"></td>
+      <td class="col-del" aria-hidden="true"></td></tr>`;
+    const canRemoveLayer = pkgLayers.length > 1;
+    for (let i = 0; i < pkgLayers.length; i++) {
       const L = pkgLayers[i];
       const rL = layerR(layerLambda(L), L.thick);
+      const delBtn = canRemoveLayer
+        ? `<button type="button" class="insul-layer-del-btn" onclick="Insulation.removeLayer(${i})" aria-label="레이어 ${i + 1} 삭제"><i class="fas fa-times"></i></button>`
+        : '';
       html += `<tr><td class="col-no">${i + 1}</td>
         <td><select onchange="Insulation.onSpecPick(${i}, this.value)">${specOptionsHtml(L.specId)}</select></td>
         <td><input type="number" step="0.001" value="${L.lambda}" onchange="Insulation.onLayerField(${i},'lambda',this.value)"></td>
         <td><input type="number" step="1" value="${L.thick}" onchange="Insulation.onLayerField(${i},'thick',this.value)"></td>
-        <td class="col-r"><input readonly value="${fmtR(rL)}"></td></tr>`;
+        <td class="col-r"><input readonly value="${fmtR(rL)}"></td>
+        <td class="col-del">${delBtn}</td></tr>`;
     }
     html += `<tr class="finish-row"><td class="col-no">마감</td>
       <td><select onchange="Insulation.onFinishPick(this.value)">${finishOptionsHtml(pkgFinishId)}</select></td>
       <td><input readonly value="—"></td>
       <td><input readonly value="${finishMmLabel(fin)}"></td>
-      <td class="col-r"><input readonly value="${fmtR(rFinish)}"></td></tr>`;
+      <td class="col-r"><input readonly value="${fmtR(rFinish)}"></td>
+      <td class="col-del" aria-hidden="true"></td></tr>`;
     html += `<tr class="surface"><td class="col-no">표면</td>
       <td colspan="3"><input readonly value="${escHtml(surf.bottom.label)}"></td>
-      <td class="col-r"><input readonly value="${fmtR(surf.bottom.r)}"></td></tr>`;
+      <td class="col-r"><input readonly value="${fmtR(surf.bottom.r)}"></td>
+      <td class="col-del" aria-hidden="true"></td></tr>`;
     const tbody = document.getElementById('insul-layer-tbody');
     if (tbody) tbody.innerHTML = html;
+    syncLayerAddButton();
 
     refreshCellUCompare();
     persistEditorToCell();
@@ -985,23 +1035,28 @@ const Insulation = (function () {
     if (!tbody) return;
     let html = `<tr class="surface"><td class="col-no">표면</td>
       <td colspan="3"><input readonly value="—" tabindex="-1"></td>
-      <td class="col-r"><input readonly value="—" tabindex="-1"></td></tr>`;
-    for (let i = 0; i < LAYER_SLOTS; i++) {
+      <td class="col-r"><input readonly value="—" tabindex="-1"></td>
+      <td class="col-del" aria-hidden="true"></td></tr>`;
+    for (let i = 0; i < DEFAULT_EMPTY_LAYER_COUNT; i++) {
       html += `<tr><td class="col-no">${i + 1}</td>
         <td><select disabled tabindex="-1"><option>—</option></select></td>
         <td><input type="number" readonly value="" tabindex="-1"></td>
         <td><input type="number" readonly value="" tabindex="-1"></td>
-        <td class="col-r"><input readonly value="—" tabindex="-1"></td></tr>`;
+        <td class="col-r"><input readonly value="—" tabindex="-1"></td>
+        <td class="col-del" aria-hidden="true"></td></tr>`;
     }
     html += `<tr class="finish-row"><td class="col-no">마감</td>
       <td><select disabled tabindex="-1"><option>—</option></select></td>
       <td><input readonly value="—" tabindex="-1"></td>
       <td><input readonly value="—" tabindex="-1"></td>
-      <td class="col-r"><input readonly value="—" tabindex="-1"></td></tr>`;
+      <td class="col-r"><input readonly value="—" tabindex="-1"></td>
+      <td class="col-del" aria-hidden="true"></td></tr>`;
     html += `<tr class="surface"><td class="col-no">표면</td>
       <td colspan="3"><input readonly value="—" tabindex="-1"></td>
-      <td class="col-r"><input readonly value="—" tabindex="-1"></td></tr>`;
+      <td class="col-r"><input readonly value="—" tabindex="-1"></td>
+      <td class="col-del" aria-hidden="true"></td></tr>`;
     tbody.innerHTML = html;
+    syncLayerAddButton();
   }
 
   async function reorderPackages(orderedIds) {
@@ -1755,6 +1810,8 @@ const Insulation = (function () {
       pkgLayers[i][key] = val;
       renderPackageTable();
     },
+    addLayer,
+    removeLayer,
     onFinishPick: (id) => {
       pkgFinishId = id;
       renderPackageTable();

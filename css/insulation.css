@@ -64,12 +64,52 @@
   border-color: var(--primary);
 }
 .insul-layer-table .col-no    { width: 52px;  text-align: center; background: var(--gray-50); font-size: 11px; font-weight: 600; color: var(--gray-600); }
+.insul-layer-table thead .col-no { vertical-align: middle; padding: 6px 4px; }
+.insul-layer-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.insul-layer-add-btn:hover:not(:disabled) { background: var(--primary-light, #eff6ff); color: var(--primary); }
+.insul-layer-add-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  color: var(--gray-400);
+  background: transparent;
+}
 .insul-layer-table tr.surface .col-no,
 .insul-layer-table tr.finish-row .col-no { color: var(--gray-700); }
 .insul-layer-table .col-lambda { width: 100px; }
 .insul-layer-table .col-thick  { width:  88px; }
 .insul-layer-table .col-r      { width: 100px; }
 .insul-layer-table .col-r input { background: #f8fafc; text-align: right; font-variant-numeric: tabular-nums; color: var(--gray-700); }
+.insul-layer-table .col-del    { width: 36px; text-align: center; padding: 4px 2px; vertical-align: middle; }
+.insul-layer-del-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gray-400);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.insul-layer-del-btn:hover { background: #fef2f2; color: #dc2626; }
 .insul-layer-table tr.surface  td { background: #f0fdf4; }
 .insul-layer-table tr.finish-row td { background: #fffbeb; }
 

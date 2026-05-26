@@ -394,11 +394,20 @@
                             <col class="col-lambda">
                             <col class="col-thick">
                             <col class="col-r">
+                            <col class="col-del">
                           </colgroup>
                           <thead>
                             <tr>
-                              <th class="col-no" aria-hidden="true"></th><th>소재</th>
-                              <th class="col-lambda">λ</th><th class="col-thick">mm</th><th class="col-r">R</th>
+                              <th class="col-no">
+                                <button type="button" id="insul-btn-add-layer" class="insul-layer-add-btn"
+                                  onclick="Insulation.addLayer()" disabled title="부위·지역 셀을 먼저 선택하세요"
+                                  aria-label="레이어 추가"><i class="fas fa-plus"></i></button>
+                              </th>
+                              <th>소재</th>
+                              <th class="col-lambda">λ</th>
+                              <th class="col-thick">mm</th>
+                              <th class="col-r">R</th>
+                              <th class="col-del" aria-hidden="true"></th>
                             </tr>
                           </thead>
                           <tbody id="insul-layer-tbody"></tbody>
